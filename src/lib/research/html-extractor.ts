@@ -31,12 +31,21 @@ const INJECTION_PATTERNS = [
 
 export function sanitizeUntrustedText(text: string): string {
   const withoutControls = text.replace(/[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, "");
-  const lines = withoutControls.split(/\r?\n/).map((line) =>
-    INJECTION_PATTERNS.some((pattern) => pattern.test(line)) ? REDACTION : line,
-  );
+  const blocks = withoutControls.split(/\n{2,}/).map((block) => {
+    const lines = block.split(/\r?\n/);
+    const redactedLines = lines.map((line) =>
+      INJECTION_PATTERNS.some((pattern) => pattern.test(line)) ? REDACTION : line,
+    );
+    if (redactedLines.includes(REDACTION)) return redactedLines.join("\n");
 
-  return lines
-    .filter((line, index) => line !== REDACTION || lines[index - 1] !== REDACTION)
+    const collapsed = block.replace(/\s+/g, " ");
+    return INJECTION_PATTERNS.some((pattern) => pattern.test(collapsed)) ? REDACTION : block;
+  });
+
+  return blocks
+    .join("\n\n")
+    .split(/\r?\n/)
+    .filter((line, index, lines) => line !== REDACTION || lines[index - 1] !== REDACTION)
     .join("\n")
     .trim();
 }
@@ -99,14 +108,34 @@ export function extractHtmlDocument(
 async function assertPublicDns(
   hostname: string,
   lookup: NonNullable<FetchDependencies["lookup"]>,
+  signal: AbortSignal,
 ): Promise<void> {
-  const addresses = await lookup(hostname, { all: true });
+  const addresses = await withAbort(lookup(hostname, { all: true }), signal);
   if (addresses.length === 0 || addresses.some(({ address }) => isUnsafeIpAddress(address))) {
     throw new Error("Hostname resolved to a non-public IP address");
   }
 }
 
-async function readBoundedBody(response: Response): Promise<string> {
+function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(new Error("Documentation fetch timed out"));
+
+  return new Promise<T>((resolve, reject) => {
+    const abort = () => reject(new Error("Documentation fetch timed out"));
+    signal.addEventListener("abort", abort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", abort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", abort);
+        reject(error);
+      },
+    );
+  });
+}
+
+async function readBoundedBody(response: Response, signal: AbortSignal): Promise<string> {
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > MAX_RESPONSE_BYTES) {
     throw new Error("HTML response is too large");
@@ -118,7 +147,7 @@ async function readBoundedBody(response: Response): Promise<string> {
   let total = 0;
 
   while (true) {
-    const { done, value } = await reader.read();
+    const { done, value } = await withAbort(reader.read(), signal);
     if (done) break;
     total += value.byteLength;
     if (total > MAX_RESPONSE_BYTES) {
@@ -144,24 +173,25 @@ export async function fetchHtmlDocument(
   const lookup = dependencies.lookup ?? dnsLookup;
   const fetchImpl = dependencies.fetch ?? globalThis.fetch;
   let currentUrl = rawUrl;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
-  for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
-    const validation = validateExternalUrl(currentUrl);
-    if (!validation.valid || !validation.normalizedUrl) {
-      throw new Error(validation.reason ?? "URL is not allowed");
-    }
+  try {
+    for (let redirects = 0; redirects <= MAX_REDIRECTS; redirects += 1) {
+      const validation = validateExternalUrl(currentUrl);
+      if (!validation.valid || !validation.normalizedUrl) {
+        throw new Error(validation.reason ?? "URL is not allowed");
+      }
 
-    const url = new URL(validation.normalizedUrl);
-    await assertPublicDns(url.hostname.replace(/^\[|\]$/g, ""), lookup);
+      const url = new URL(validation.normalizedUrl);
+      await assertPublicDns(url.hostname.replace(/^\[|\]$/g, ""), lookup, controller.signal);
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-    try {
       const response = await fetchImpl(url, { redirect: "manual", signal: controller.signal });
       if (REDIRECT_STATUSES.has(response.status)) {
         const location = response.headers.get("location");
         if (!location) throw new Error("Redirect response omitted Location header");
         if (redirects === MAX_REDIRECTS) throw new Error("Too many redirects");
+        await response.body?.cancel();
         currentUrl = new URL(location, url).toString();
         continue;
       }
@@ -172,11 +202,11 @@ export async function fetchHtmlDocument(
         throw new Error("Response is not HTML content");
       }
 
-      const html = await readBoundedBody(response);
+      const html = await readBoundedBody(response, controller.signal);
       return extractHtmlDocument(html, url.toString());
-    } finally {
-      clearTimeout(timeout);
     }
+  } finally {
+    clearTimeout(timeout);
   }
 
   throw new Error("Too many redirects");

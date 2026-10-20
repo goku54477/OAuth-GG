@@ -20,7 +20,11 @@ function isUnsafeIpv4(address: string): boolean {
     (a === 172 && b >= 16 && b <= 31) ||
     (a === 192 && b === 0 && c === 0) ||
     (a === 192 && b === 0 && c === 2) ||
+    (a === 192 && b === 31 && c === 196) ||
+    (a === 192 && b === 52 && c === 193) ||
+    (a === 192 && b === 88 && c === 99) ||
     (a === 192 && b === 168) ||
+    (a === 192 && b === 175 && c === 48) ||
     (a === 198 && (b === 18 || b === 19)) ||
     (a === 198 && b === 51 && c === 100) ||
     (a === 203 && b === 0 && c === 113) ||
@@ -70,7 +74,10 @@ function isUnsafeIpv6(address: string): boolean {
   const linkLocal = (words[0] & 0xffc0) === 0xfe80;
   const siteLocal = (words[0] & 0xffc0) === 0xfec0;
   const multicast = (words[0] & 0xff00) === 0xff00;
+  const globalUnicast = (words[0] & 0xe000) === 0x2000;
+  const protocolAssignments = words[0] === 0x2001 && words[1] <= 0x01ff;
   const documentation = words[0] === 0x2001 && words[1] === 0x0db8;
+  const sixToFour = words[0] === 0x2002;
   const mappedIpv4 = words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
 
   if (mappedIpv4) {
@@ -78,7 +85,18 @@ function isUnsafeIpv6(address: string): boolean {
     return isUnsafeIpv4(ipv4);
   }
 
-  return allZero || loopback || uniqueLocal || linkLocal || siteLocal || multicast || documentation;
+  return (
+    allZero ||
+    loopback ||
+    uniqueLocal ||
+    linkLocal ||
+    siteLocal ||
+    multicast ||
+    !globalUnicast ||
+    protocolAssignments ||
+    documentation ||
+    sixToFour
+  );
 }
 
 export function isUnsafeIpAddress(address: string): boolean {

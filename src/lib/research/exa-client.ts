@@ -41,7 +41,8 @@ function providerTokens(providerQuery: string): string[] {
 
 function looksOfficial(providerQuery: string, hostname: string): boolean {
   const labels = hostname.toLowerCase().split(".");
-  return providerTokens(providerQuery).some((token) => labels.some((label) => label === token));
+  const registrableLabel = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
+  return providerTokens(providerQuery).some((token) => token === registrableLabel);
 }
 
 function asResults(payload: ExaResponse): ExaResult[] {
