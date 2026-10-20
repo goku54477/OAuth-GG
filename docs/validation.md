@@ -21,7 +21,7 @@ Validated implementation commit: `b2fdeb3` (2026-10-20).
 
 ## Outside-catalog acceptance
 
-Status: **Executed on 2026-10-20 — degraded model outcome recorded.**
+Status: **Executed on 2026-10-20 — successful live completion recorded.**
 
 Planned request, without credentials:
 
@@ -46,4 +46,25 @@ Observed result:
 - The resulting `partial-fallback` guide persisted `read`, the source mode, and the official documentation URL; it explicitly marks requested-capability coverage and provider review/configuration requirements as unknown.
 - POST payload, saved record, and later GET payload were identical. The guide route and Markdown export rendered the canonical safe data without a configuration snippet, callback hint, secret-like content, fictional domain, fee, timeline, or audit claim.
 
-The local root cause was subsequently isolated: the server inherited a stale process-level `OPENAI_API_KEY`, which took precedence over the current `.env` value when Next.js started. A direct model-access check using the current `.env` value returned HTTP 200. This validates the outside-catalog, evidence, persistence, rendering, and degraded-mode paths, but not a successful live model completion until a separately approved retry is made with the inherited stale variable cleared.
+The initial 401 was traced to a stale process-level `OPENAI_API_KEY` inherited by the server, which took precedence over the current `.env` value. A direct model-access check with the current `.env` value returned HTTP 200. The server was then restarted with only the inherited stale variable cleared; the retry of the exact Mastodon request completed successfully with `generationMode: live-researched`. The guide remained `partial` because the official evidence did not explicitly establish the requested permission, as required by the integrity policy.
+
+## Additional live acceptance: HubSpot
+
+Status: **Executed on 2026-10-20 — successful live completion recorded.**
+
+Request, without credentials:
+
+```json
+{
+  "queryOrUrl": "HubSpot",
+  "officialDocumentationUrl": "https://developers.hubspot.com/docs/guides/apps/public-apps/overview?offset=0",
+  "capabilities": ["read"]
+}
+```
+
+Observed result:
+
+- Catalog identity resolution matched HubSpot and direct official-document retrieval produced one citation with no Exa discovery.
+- One `gpt-5-nano` attempt completed successfully with `generationMode: live-researched`.
+- The canonical persisted guide is deliberately `partial`: this specific page does not explicitly establish the requested `read` permission. It records that limitation as an explicit unknown rather than claiming sufficient access.
+- POST, persistence, and GET resolved to the same guide. The rendered route exposes the supplied official documentation link, requested capability, citation, and explicit unknowns, without a configuration snippet, callback value, secret-like content, fictional domain, fee, timeline, or audit claim.
