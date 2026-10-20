@@ -8,6 +8,7 @@ import {
   getToolkitBySlug,
 } from "@/lib/catalog";
 import { fetchRecommendedScopes } from "@/lib/catalog/composio-client";
+import { normalizeToolkitSummary } from "@/lib/catalog/composio-client";
 
 const originalApiKey = process.env.COMPOSIO_API_KEY;
 
@@ -60,6 +61,15 @@ describe("catalog snapshot", () => {
     expect(stats.managedOAuthCount + stats.customOnlyCount).toBe(toolkits.length);
     expect(stats.categories).toEqual([...stats.categories].sort());
   });
+
+  it("does not expose mutable snapshot references", async () => {
+    const first = await getToolkitBySlug("github");
+    first?.categories.push("Injected");
+
+    await expect(getToolkitBySlug("github")).resolves.not.toMatchObject({
+      categories: expect.arrayContaining(["Injected"]),
+    });
+  });
 });
 
 describe("live metadata fallback", () => {
@@ -80,6 +90,98 @@ describe("live metadata fallback", () => {
 
     await expect(fetchLiveToolkitMetadata("../github")).resolves.toBeNull();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("labels complete live detail as observed", async () => {
+    process.env.COMPOSIO_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({
+          slug: "github",
+          name: "GitHub",
+          composio_managed_auth_schemes: ["oauth2"],
+          auth_config_details: [
+            {
+              mode: "oauth2",
+              fields: {
+                auth_config_creation: {
+                  required: [{ name: "client_id" }, { name: "client_secret" }],
+                },
+              },
+            },
+          ],
+          meta: {
+            description: "GitHub live metadata",
+            categories: [{ name: "Developer Tools" }],
+            tools_count: 2,
+            triggers_count: 1,
+          },
+        }),
+      ),
+    );
+
+    await expect(fetchLiveToolkitMetadata("github")).resolves.toMatchObject({
+      summary: {
+        authSchemes: ["oauth2"],
+        description: "GitHub live metadata",
+        toolsCount: 2,
+      },
+      epistemicStatus: "observed",
+    });
+  });
+
+  it("labels partial HTTP 200 detail as source-supported", async () => {
+    process.env.COMPOSIO_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(Response.json({ slug: "github", name: "GitHub" })),
+    );
+
+    await expect(fetchLiveToolkitMetadata("github")).resolves.toMatchObject({
+      summary: { slug: "github" },
+      rawAuthConfigDetails: null,
+      epistemicStatus: "source-supported",
+    });
+  });
+
+  it("falls back on server failure", async () => {
+    process.env.COMPOSIO_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("{}", { status: 500 })),
+    );
+
+    await expect(fetchLiveToolkitMetadata("github")).resolves.toMatchObject({
+      summary: { slug: "github" },
+      epistemicStatus: "source-supported",
+    });
+  });
+});
+
+describe("live normalization", () => {
+  it("honors explicit empty live auth arrays instead of reviving snapshot values", async () => {
+    const fallback = await getToolkitBySlug("github");
+    expect(fallback).not.toBeNull();
+
+    expect(
+      normalizeToolkitSummary(
+        {
+          slug: "github",
+          name: "GitHub",
+          auth_schemes: [],
+          composio_managed_auth_schemes: [],
+          auth_config_details: [],
+          meta: { categories: [], tools_count: 0, triggers_count: 0 },
+        },
+        fallback!,
+      ),
+    ).toMatchObject({
+      authSchemes: [],
+      composioManagedAuthSchemes: [],
+      hasManagedOAuth: false,
+      requiredAuthCreationFields: [],
+    });
   });
 });
 

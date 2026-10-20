@@ -6,12 +6,23 @@ import {
 
 import {
   fetchToolkitDetail,
+  isCompleteToolkitDetail,
   isSafeToolkitSlug,
   normalizeToolkitSummary,
 } from "./composio-client";
 
 const snapshot = ComposioToolkitSummarySchema.array().parse(snapshotJson);
 const bySlug = new Map(snapshot.map((toolkit) => [toolkit.slug, toolkit]));
+
+function cloneToolkit(toolkit: ComposioToolkitSummary): ComposioToolkitSummary {
+  return {
+    ...toolkit,
+    categories: [...toolkit.categories],
+    authSchemes: [...toolkit.authSchemes],
+    composioManagedAuthSchemes: [...toolkit.composioManagedAuthSchemes],
+    requiredAuthCreationFields: [...toolkit.requiredAuthCreationFields],
+  };
+}
 
 export async function getCatalogToolkits(options?: {
   search?: string;
@@ -33,13 +44,14 @@ export async function getCatalogToolkits(options?: {
       [toolkit.slug, toolkit.name, toolkit.description].some((value) =>
         value.toLowerCase().includes(search),
       );
-  });
+  }).map(cloneToolkit);
 }
 
 export async function getToolkitBySlug(
   slug: string,
 ): Promise<ComposioToolkitSummary | null> {
-  return bySlug.get(slug.trim().toLowerCase()) ?? null;
+  const toolkit = bySlug.get(slug.trim().toLowerCase());
+  return toolkit ? cloneToolkit(toolkit) : null;
 }
 
 export async function fetchLiveToolkitMetadata(slug: string): Promise<{
@@ -52,7 +64,7 @@ export async function fetchLiveToolkitMetadata(slug: string): Promise<{
   const fallback = bySlug.get(normalizedSlug);
   const raw = await fetchToolkitDetail(normalizedSlug);
 
-  if (raw && typeof raw === "object") {
+  if (isCompleteToolkitDetail(raw)) {
     const summary = normalizeToolkitSummary(raw, fallback);
     if (summary) {
       return {
@@ -68,7 +80,7 @@ export async function fetchLiveToolkitMetadata(slug: string): Promise<{
 
   return fallback
     ? {
-        summary: fallback,
+        summary: cloneToolkit(fallback),
         rawAuthConfigDetails: null,
         epistemicStatus: "source-supported",
       }

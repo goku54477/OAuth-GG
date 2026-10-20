@@ -12,6 +12,10 @@ function isObject(value: unknown): value is JsonObject {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function hasOwn(object: JsonObject, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, key);
+}
+
 function strings(value: unknown): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string")
@@ -45,6 +49,17 @@ async function requestJson(
 
 export function isSafeToolkitSlug(slug: string): boolean {
   return SAFE_SLUG.test(slug);
+}
+
+export function isCompleteToolkitDetail(raw: unknown): raw is JsonObject {
+  return (
+    isObject(raw) &&
+    typeof raw.slug === "string" &&
+    typeof raw.name === "string" &&
+    Array.isArray(raw.composio_managed_auth_schemes) &&
+    Array.isArray(raw.auth_config_details) &&
+    isObject(raw.meta)
+  );
 }
 
 export async function fetchToolkitList(
@@ -95,11 +110,22 @@ export function normalizeToolkitSummary(
   const name = typeof raw.name === "string" ? raw.name : fallback?.name;
   if (!slug || !name || !isSafeToolkitSlug(slug)) return null;
 
-  const authSchemes = strings(raw.auth_schemes);
-  const managedSchemes = strings(raw.composio_managed_auth_schemes);
+  const explicitAuthSchemes = hasOwn(raw, "auth_schemes");
+  const explicitManagedSchemes = hasOwn(raw, "composio_managed_auth_schemes");
+  const explicitAuthDetails = hasOwn(raw, "auth_config_details");
   const authDetails = Array.isArray(raw.auth_config_details)
     ? raw.auth_config_details
     : [];
+  const authSchemes = explicitAuthSchemes
+    ? strings(raw.auth_schemes)
+    : explicitAuthDetails
+      ? authDetails.flatMap((detail) =>
+          isObject(detail) && typeof detail.mode === "string" ? [detail.mode] : [],
+        )
+      : fallback?.authSchemes ?? [];
+  const managedSchemes = explicitManagedSchemes
+    ? strings(raw.composio_managed_auth_schemes)
+    : fallback?.composioManagedAuthSchemes ?? [];
   const requiredAuthCreationFields = authDetails.flatMap((detail) => {
     if (!isObject(detail) || !isObject(detail.fields)) return [];
     const creation = isObject(detail.fields.auth_config_creation)
@@ -128,18 +154,17 @@ export function normalizeToolkitSummary(
         : fallback?.description ?? `Connect ${name} through Composio.`,
     ...(typeof meta.logo === "string" ? { logoUrl: meta.logo } : {}),
     ...(typeof meta.app_url === "string" ? { appUrl: meta.app_url } : {}),
-    categories: categories.length ? categories : fallback?.categories ?? [],
-    authSchemes: authSchemes.length ? authSchemes : fallback?.authSchemes ?? [],
-    composioManagedAuthSchemes: managedSchemes.length
-      ? managedSchemes
-      : fallback?.composioManagedAuthSchemes ?? [],
-    hasManagedOAuth: (managedSchemes.length
-      ? managedSchemes
-      : fallback?.composioManagedAuthSchemes ?? []
-    ).some((scheme) => scheme.toLowerCase().includes("oauth")),
+    categories: hasOwn(meta, "categories")
+      ? categories
+      : fallback?.categories ?? [],
+    authSchemes,
+    composioManagedAuthSchemes: managedSchemes,
+    hasManagedOAuth: managedSchemes.some((scheme) =>
+      scheme.toLowerCase().includes("oauth"),
+    ),
     requiresCustomAppForProduction:
       fallback?.requiresCustomAppForProduction ?? true,
-    requiredAuthCreationFields: requiredAuthCreationFields.length
+    requiredAuthCreationFields: explicitAuthDetails
       ? [...new Set(requiredAuthCreationFields)]
       : fallback?.requiredAuthCreationFields ?? [],
     toolsCount:
