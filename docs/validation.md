@@ -19,6 +19,20 @@ Validated implementation commit: `b2fdeb3` (2026-10-20).
 - `npm run audit:guides` twice: 11 persisted records audited on each run with stable canonical output.
 - Browser acceptance: Guides/Catalog navigation, invalid-tab fallback, Saved/OAuth/All segmentation, catalog-to-investigation prefill, reference and partial guides, mobile/tablet widths, `/api/catalog`, guide API 404, and page 404 verified. No console errors or horizontal viewport overflow were observed.
 
+## Submission-integrity release validation
+
+Code-integrity release commit: `e92c22789ea71f2acc0a13996534ecc7188f246e` (2026-10-21).
+
+- `npx vitest run`: 122 tests passed across 8 files.
+- `npx tsc --noEmit --incremental false`: zero errors.
+- `npm run build`: Next.js 15.5.28 production build completed successfully.
+- `npm audit --omit=dev --audit-level=high`: zero critical/high production advisories; five low AI-SDK transitive advisories remain.
+- `npm run audit:guides` ran twice against configured Turso persistence: 15 persisted records audited on each pass.
+- Fresh public browser sessions loaded `/`, `/guides/hubspot`, and `/guides/linear`. `GET /api/catalog` returned 1,619 entries and a missing-guide request returned 404.
+- HubSpot now renders one source-backed configuration instruction and conditional Marketplace review facts; it does not claim scope coverage. Linear renders source-backed OAuth setup and documented scope names; requested workflow coverage remains Unknown.
+
+No paid generation request was made for this release. A model-success label remains distinct from complete source coverage.
+
 ## Outside-catalog acceptance
 
 Status: **Executed on 2026-10-20 — model invocation completed; evidence result remained partial.**
