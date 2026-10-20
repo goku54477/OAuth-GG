@@ -40,12 +40,14 @@ function sourceSentences(citation: EvidenceCitation): string[] {
   return (citation.verbatimQuote ?? "")
     .split(/(?<=[.!?])\s+|\r?\n+/)
     .map((sentence) => sentence.replace(/^\s*[-*|]\s*/, "").trim())
-    .filter((sentence) => sentence.length >= 20 && sentence.length <= 500);
+    .filter((sentence) => sentence.length >= 20 && sentence.length <= 500)
+    .filter((sentence) => !sentence.startsWith("#"));
 }
 
 function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep | undefined {
   const instruction = sourceSentences(citation).find((sentence) =>
-    /\b(create|register|configure|redirect|authorization|oauth|client id|scope)\b/i.test(sentence),
+    /^(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(sentence)
+      || /\b(need|must)\s+to\s+(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(sentence),
   );
   if (!instruction) return undefined;
 
