@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-obsidian-950: #090a0f;
+  --color-obsidian-900: #0e1015;
+  --color-obsidian-850: #13161c;
+  --color-obsidian-800: #181a22;
+  --color-obsidian-750: #1f222d;
+  --color-obsidian-700: #272a37;
+  --color-obsidian-border: rgba(255, 255, 255, 0.08);
+  --color-obsidian-border-subtle: rgba(255, 255, 255, 0.04);
+  --color-obsidian-border-strong: rgba(255, 255, 255, 0.14);
+
+  --color-sage: #22c55e;
+  --color-sage-soft: rgba(34, 197, 94, 0.08);
+  --color-sage-border: rgba(34, 197, 94, 0.22);
+  --color-sage-text: #4ade80;
+
+  --color-amber: #f59e0b;
+  --color-amber-soft: rgba(245, 158, 11, 0.08);
+  --color-amber-border: rgba(245, 158, 11, 0.22);
+  --color-amber-text: #fbbf24;
+}
+
+@layer base {
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #090a0f;
+    color: #e2e8f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+}
+
+/* Custom sleek scrollbar for developer workbench */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090a0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+::selection {
+  background: #1e293b;
+  color: #38bdf8;
+}
+
+/* Monospace font utility for scopes, tokens, code */
+.font-code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", "JetBrains Mono", monospace;
+}
