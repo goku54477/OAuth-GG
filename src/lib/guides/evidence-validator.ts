@@ -17,6 +17,49 @@ export interface AuditResult {
 
 const COVERAGE_UNKNOWN = "Requested capability coverage";
 
+function normalizedText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9:]+/g, " ").trim().replace(/\s+/g, " ");
+}
+
+function citationSupportsText(citation: EvidenceCitation | undefined, value: string): boolean {
+  if (!citation?.verbatimQuote) return false;
+  const candidate = normalizedText(value);
+  return candidate.length > 6 && normalizedText(citation.verbatimQuote).includes(candidate);
+}
+
+function documentedScopeDescription(citation: EvidenceCitation | undefined, scope: string): string | undefined {
+  const quote = citation?.verbatimQuote;
+  if (!quote) return undefined;
+  const line = quote.split(/\r?\n/).find((candidate) => candidate.toLowerCase().includes(scope.toLowerCase()));
+  if (!line) return undefined;
+  const description = line.replace(/^\s*[-*|]\s*/, "").replace(new RegExp(`^${scope.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\s*[-:–—]?\s*`, "i"), "").trim();
+  return description.length >= 8 ? description : undefined;
+}
+
+function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep {
+  const match = citation.verbatimQuote?.match(/(Create a new OAuth2? Application[^.]*\.)/i);
+  if (match) {
+    return {
+      stepNumber,
+      title: "Create an OAuth2 Application",
+      consolePath: citation.sourceUrl,
+      instructions: match[1].trim(),
+      criticalConfigValues: [],
+      epistemicStatus: "source-supported",
+      citationIds: [citation.id],
+    };
+  }
+  return {
+    stepNumber,
+    title: "Consult official provider documentation",
+    consolePath: citation.sourceUrl,
+    instructions: citation.sourceTitle,
+    criticalConfigValues: [],
+    epistemicStatus: "source-supported",
+    citationIds: [citation.id],
+  };
+}
+
 export function normalizeReferenceGuideForEvidence(guide: ProviderGuide): ProviderGuide {
   if (guide.generationMode !== "golden-verified") return ProviderGuideSchema.parse(guide);
 
@@ -59,15 +102,7 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
 
   const citations = guide.citations.filter(isTrustedOfficialCitation);
   const citationById = new Map(citations.map((citation) => [citation.id, citation]));
-  const documentedSteps = citations.map((citation, index): SetupStep => ({
-    stepNumber: index + 1,
-    title: "Consult official provider documentation",
-    consolePath: citation.sourceUrl,
-    instructions: citation.sourceTitle,
-    criticalConfigValues: [],
-    epistemicStatus: "source-supported",
-    citationIds: [citation.id],
-  }));
+  const documentedSteps = citations.map((citation, index) => documentedSetupStep(citation, index + 1));
 
   const variants = guide.variants.map((variant) => {
     const scopes = variant.scopes.flatMap((scope) => {
@@ -83,11 +118,15 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
         return Boolean(citation?.verbatimQuote && scopePattern.test(citation.verbatimQuote));
       });
       if (citationIds.length === 0) return [];
+      const supportingCitation = citationById.get(citationIds[0]);
+      const documentedCapability = citationSupportsText(supportingCitation, scope.requiredForCapability)
+        ? scope.requiredForCapability
+        : documentedScopeDescription(supportingCitation, normalizedScope) ?? `Documented provider permission: ${normalizedScope}.`;
       return [{
         ...scope,
         displayName: scope.scope,
         classification: "unknown" as const,
-        requiredForCapability: "Provider scope documented; requested capability coverage is not verified.",
+        requiredForCapability: documentedCapability,
         triggersExternalReview: false,
         triggersSecurityAudit: false,
         leastPrivilegeAlternative: undefined,
@@ -102,7 +141,9 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
       summary: scopes.length
         ? "Provider permission names are documented below; coverage for the requested workflow is not verified."
         : "No provider permission could be tied to an official source passage.",
-      recommendedAppType: "Unknown",
+      recommendedAppType: citations.some((citation) => citationSupportsText(citation, variant.recommendedAppType))
+        ? variant.recommendedAppType
+        : "Unknown",
       approvalGateSummary: "Unknown",
       estimatedReviewTimeline: "Unknown",
       securityAuditRequired: "Unknown",
@@ -117,6 +158,18 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     "Provider review, audit, and configuration requirements",
   ];
   const hasCatalogMetadata = guide.composioIntegration.epistemicStatus !== "unknown";
+
+  const supportedSteps = guide.registrationSteps.filter((step) =>
+    step.citationIds.some((id) => {
+      const citation = citationById.get(id);
+      return citationSupportsText(citation, step.instructions);
+    }),
+  ).filter((step) => step.title !== "Consult official provider documentation").map((step) => ({
+    ...step,
+    consolePath: step.citationIds.map((id) => citationById.get(id)?.sourceUrl).find(Boolean) ?? "",
+    criticalConfigValues: [],
+    epistemicStatus: "source-supported" as const,
+  }));
 
   return ProviderGuideSchema.parse({
     ...guide,
@@ -134,7 +187,7 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
       citationIds: guide.composioIntegration.citationIds.filter((id) => citationById.has(id)),
     },
     variants,
-    registrationSteps: documentedSteps,
+    registrationSteps: supportedSteps.length ? supportedSteps : documentedSteps,
     testingAndSandboxRules: [],
     distributionAndReviewChecklist: [],
     practicalObservations: [],

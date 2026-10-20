@@ -270,6 +270,55 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(JSON.stringify(normalized)).not.toContain("composio.example.com");
   });
 
+  it("keeps source-backed OAuth setup and permission descriptions for a live guide", () => {
+    const citation = {
+      id: "linear-oauth",
+      sourceUrl: "https://linear.app/developers/oauth-2-0-authentication",
+      sourceTitle: "OAuth 2.0 authentication",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Create a new OAuth2 Application and configure the redirect callback URLs to your application. read - Read access for the user's account. issues:create - Allows creating new issues and their attachments.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "linear",
+      providerName: "Linear",
+      generationMode: "live-researched",
+      citations: [citation],
+      variants: [{
+        ...githubPublicIssuesGuide.variants[0],
+        title: "Linear OAuth2 application",
+        summary: "Use an OAuth2 Application for user-authorized Linear access.",
+        recommendedAppType: "OAuth2 Application",
+        scopes: [{
+          ...githubPublicIssuesGuide.variants[0].scopes[0],
+          scope: "issues:create",
+          displayName: "Create issues",
+          requiredForCapability: "Allows creating new issues and their attachments.",
+          citationIds: [citation.id],
+        }],
+      }],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Create an OAuth2 Application",
+        instructions: "Create a new OAuth2 Application and configure the redirect callback URLs to your application.",
+        consolePath: citation.sourceUrl,
+        criticalConfigValues: [],
+        citationIds: [citation.id],
+      }],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+
+    expect(normalized.variants[0].recommendedAppType).toBe("OAuth2 Application");
+    expect(normalized.variants[0].scopes[0].requiredForCapability).toContain("creating new issues");
+    expect(normalized.registrationSteps[0]).toMatchObject({
+      title: "Create an OAuth2 Application",
+      instructions: "Create a new OAuth2 Application and configure the redirect callback URLs to your application.",
+    });
+  });
+
   it("preserves source-supported status when citations are valid and present in allowedSourceUrls", () => {
     const allowedUrls = [
       "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app",

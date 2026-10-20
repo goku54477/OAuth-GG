@@ -4,6 +4,7 @@ import * as path from "node:path";
 
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { auditPersistedGuides, saveGuide, getGuideBySlug, listSavedGuides } from "@/lib/db";
+import { guideToMarkdown } from "@/components/workbench-utils";
 import type { ProviderGuide } from "@/types/contracts";
 
 describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
@@ -211,6 +212,40 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(saved.composioIntegration.customAuthConfigSnippet).toBe("");
     expect(saved.composioIntegration.composioRedirectUriHint).toBe("");
     expect(retrieved).toEqual(saved);
+  });
+
+  it("persists and exports source-backed detailed OAuth guidance", async () => {
+    const sourceBackedGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "linear-source-backed-guidance",
+      citations: [{
+        ...testGuide.citations[0],
+        verbatimQuote: "Create a new OAuth2 Application and configure the redirect callback URLs to your application. issues:create - Allows creating new issues and their attachments.",
+      }],
+      variants: [{
+        ...testGuide.variants[0],
+        recommendedAppType: "OAuth2 Application",
+        scopes: [{
+          ...testGuide.variants[0].scopes[0],
+          scope: "issues:create",
+          requiredForCapability: "Allows creating new issues and their attachments.",
+        }],
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Create an OAuth2 Application",
+        instructions: "Create a new OAuth2 Application and configure the redirect callback URLs to your application.",
+      }],
+    };
+
+    const saved = await saveGuide(sourceBackedGuide);
+    const retrieved = await getGuideBySlug(sourceBackedGuide.slug);
+    const markdown = guideToMarkdown(saved);
+
+    expect(retrieved).toEqual(saved);
+    expect(retrieved?.variants[0].recommendedAppType).toBe("OAuth2 Application");
+    expect(markdown).toContain("Allows creating new issues and their attachments.");
+    expect(markdown).toContain("Create a new OAuth2 Application");
   });
 
   it("lists only persisted guides; reference guides are resolved separately", async () => {
