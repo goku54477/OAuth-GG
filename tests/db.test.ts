@@ -286,6 +286,55 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(markdown).toContain("Create an OAuth app");
   });
 
+  it("migrates title-only setup records without turning review status into configuration", async () => {
+    const legacyGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "trello-legacy-title-record",
+      providerName: "Trello",
+      citations: [{
+        ...testGuide.citations[0],
+        id: "trello-submission",
+        sourceUrl: "https://developers.trello.com/docs/submitting-your-integration",
+        sourceTitle: "Submit Your Integration",
+        verbatimQuote: [
+          "# Submit Your Integration",
+          "1. Fill Out Submission Form",
+          "To submit your app, please complete the form at go.trello.com/dev-support.",
+          "After you've submitted your integration for review, the review team will notify you that they've received the submission and are reviewing the integration.",
+        ].join("\n"),
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Consult official provider documentation",
+        instructions: "Submit Your Integration",
+        citationIds: ["trello-submission"],
+      }],
+      variants: [{ ...testGuide.variants[0], scopes: [], estimatedReviewTimeline: "Two days" }],
+      distributionAndReviewChecklist: [],
+    };
+    const existing = fs.existsSync(fallbackPath)
+      ? JSON.parse(fs.readFileSync(fallbackPath, "utf-8"))
+      : {};
+    fs.writeFileSync(fallbackPath, JSON.stringify({ ...existing, [legacyGuide.slug]: legacyGuide }));
+
+    await auditPersistedGuides();
+    const migrated = await getGuideBySlug(legacyGuide.slug);
+    const markdown = guideToMarkdown(migrated!);
+
+    expect(migrated?.registrationSteps).toEqual([
+      expect.objectContaining({
+        instructions: "To submit your app, please complete the form at go.trello.com/dev-support.",
+        citationIds: ["trello-submission"],
+      }),
+    ]);
+    expect(migrated?.registrationSteps[0]?.instructions).not.toContain("After you've submitted");
+    expect(migrated?.variants[0]?.estimatedReviewTimeline).toBe("Unknown");
+    expect(migrated?.variants[0]?.scopes).toEqual([]);
+    expect(migrated?.explicitUnknowns).toContain("Captured official evidence does not map requested operations to named provider permissions.");
+    expect(markdown).toContain("To submit your app, please complete the form");
+    expect(markdown).not.toContain("### 1. Consult official provider documentation");
+  });
+
   it("lists only persisted guides; reference guides are resolved separately", async () => {
     const list = await listSavedGuides();
     expect(Array.isArray(list)).toBe(true);

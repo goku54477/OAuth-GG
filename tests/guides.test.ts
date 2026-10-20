@@ -387,6 +387,63 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
   });
 
+  it("derives explicit setup instructions without treating titles or review status as setup", () => {
+    const trelloCitation = {
+      id: "trello-integration-submission",
+      sourceUrl: "https://developers.trello.com/docs/submitting-your-integration",
+      sourceTitle: "Submit Your Integration",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: [
+        "# Submit Your Integration",
+        "1. Fill Out Submission Form",
+        "To submit your app, please complete the form at go.trello.com/dev-support.",
+        "After you've submitted your integration for review, the review team will notify you that they've received the submission and are reviewing the integration.",
+        "Our review process usually takes only a few days.",
+      ].join("\n"),
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "trello",
+      providerName: "Trello",
+      generationMode: "live-researched",
+      completenessStatus: "complete",
+      citations: [trelloCitation],
+      variants: [{
+        ...githubPublicIssuesGuide.variants[0],
+        scopes: [{
+          ...githubPublicIssuesGuide.variants[0].scopes[0],
+          scope: "read",
+          citationIds: [trelloCitation.id],
+        }],
+        estimatedReviewTimeline: "A few days",
+        securityAuditRequired: "Required",
+      }],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Consult official provider documentation",
+        instructions: "Submit Your Integration",
+        citationIds: [trelloCitation.id],
+      }],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+
+    expect(normalized.registrationSteps).toEqual([
+      expect.objectContaining({
+        instructions: "To submit your app, please complete the form at go.trello.com/dev-support.",
+        citationIds: [trelloCitation.id],
+      }),
+    ]);
+    expect(normalized.registrationSteps[0]?.instructions).not.toContain("After you've submitted");
+    expect(normalized.registrationSteps[0]?.instructions).not.toBe("Submit Your Integration");
+    expect(normalized.variants[0].scopes).toEqual([]);
+    expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
+    expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
+    expect(normalized.explicitUnknowns.join(" ")).toMatch(/official evidence/i);
+  });
+
   it("preserves source-supported status when citations are valid and present in allowedSourceUrls", () => {
     const allowedUrls = [
       "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app",
