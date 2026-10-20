@@ -36,28 +36,59 @@ function documentedScopeDescription(citation: EvidenceCitation | undefined, scop
   return description.length >= 8 ? description : undefined;
 }
 
-function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep {
-  const match = citation.verbatimQuote?.match(/(Create a new OAuth2? Application[^.]*\.)/i);
-  if (match) {
-    return {
-      stepNumber,
-      title: "Create an OAuth2 Application",
-      consolePath: citation.sourceUrl,
-      instructions: match[1].trim(),
-      criticalConfigValues: [],
-      epistemicStatus: "source-supported",
-      citationIds: [citation.id],
-    };
-  }
+function sourceSentences(citation: EvidenceCitation): string[] {
+  return (citation.verbatimQuote ?? "")
+    .split(/(?<=[.!?])\s+|\r?\n+/)
+    .map((sentence) => sentence.replace(/^\s*[-*|]\s*/, "").trim())
+    .filter((sentence) => sentence.length >= 20 && sentence.length <= 500);
+}
+
+function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep | undefined {
+  const instruction = sourceSentences(citation).find((sentence) =>
+    /\b(create|register|configure|redirect|authorization|oauth|client id|scope)\b/i.test(sentence),
+  );
+  if (!instruction) return undefined;
+
   return {
     stepNumber,
-    title: "Consult official provider documentation",
+    title: /\boauth\b/i.test(instruction)
+      ? "Configure OAuth application"
+      : "Configure provider application",
     consolePath: citation.sourceUrl,
-    instructions: citation.sourceTitle,
+    instructions: instruction,
     criticalConfigValues: [],
     epistemicStatus: "source-supported",
     citationIds: [citation.id],
   };
+}
+
+function sourceBackedClaims(
+  items: ClaimItem[],
+  citationById: Map<string, EvidenceCitation>,
+): ClaimItem[] {
+  return items.flatMap((item) => {
+    const citationIds = item.citationIds.filter((id) =>
+      citationSupportsText(citationById.get(id), item.claim),
+    );
+    return citationIds.length
+      ? [{ ...item, citationIds, epistemicStatus: "source-supported" as const, notes: undefined }]
+      : [];
+  });
+}
+
+function citationDerivedReviewClaims(citations: EvidenceCitation[]): ClaimItem[] {
+  return citations.flatMap((citation) => {
+    const claim = sourceSentences(citation).find((sentence) =>
+      /\b(marketplace|certification|review|verification)\b/i.test(sentence),
+    );
+    return claim
+      ? [{
+          claim,
+          epistemicStatus: "source-supported" as const,
+          citationIds: [citation.id],
+        }]
+      : [];
+  }).slice(0, 3);
 }
 
 function documentedAppType(citations: EvidenceCitation[]): string | undefined {
@@ -108,7 +139,10 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
 
   const citations = guide.citations.filter(isTrustedOfficialCitation);
   const citationById = new Map(citations.map((citation) => [citation.id, citation]));
-  const documentedSteps = citations.map((citation, index) => documentedSetupStep(citation, index + 1));
+  const documentedSteps = citations.flatMap((citation) => {
+    const step = documentedSetupStep(citation, 0);
+    return step ? [step] : [];
+  }).map((step, index) => ({ ...step, stepNumber: index + 1 }));
 
   const variants = guide.variants.map((variant) => {
     const scopes = variant.scopes.flatMap((scope) => {
@@ -141,15 +175,17 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
       }];
     });
 
+    const recommendedAppType = citations.some((citation) => citationSupportsText(citation, variant.recommendedAppType))
+      ? variant.recommendedAppType
+      : documentedAppType(citations) ?? "Unknown";
+
     return {
       ...variant,
-      title: "Documented provider permissions",
+      title: recommendedAppType === "Unknown" ? "Documented provider permissions" : `${recommendedAppType} path`,
       summary: scopes.length
         ? "Provider permission names are documented below; coverage for the requested workflow is not verified."
         : "No provider permission could be tied to an official source passage.",
-      recommendedAppType: citations.some((citation) => citationSupportsText(citation, variant.recommendedAppType))
-        ? variant.recommendedAppType
-        : documentedAppType(citations) ?? "Unknown",
+      recommendedAppType,
       approvalGateSummary: "Unknown",
       estimatedReviewTimeline: "Unknown",
       securityAuditRequired: "Unknown",
@@ -177,6 +213,13 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     epistemicStatus: "source-supported" as const,
   }));
 
+  const testingAndSandboxRules = sourceBackedClaims(guide.testingAndSandboxRules, citationById);
+  const sourceBackedReviewClaims = sourceBackedClaims(guide.distributionAndReviewChecklist, citationById);
+  const distributionAndReviewChecklist = sourceBackedReviewClaims.length
+    ? sourceBackedReviewClaims
+    : citationDerivedReviewClaims(citations);
+  const practicalObservations = sourceBackedClaims(guide.practicalObservations, citationById);
+
   return ProviderGuideSchema.parse({
     ...guide,
     title: `${guide.providerName} Integration & OAuth Guide (Partial Reference)`,
@@ -194,9 +237,9 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     },
     variants,
     registrationSteps: supportedSteps.length ? supportedSteps : documentedSteps,
-    testingAndSandboxRules: [],
-    distributionAndReviewChecklist: [],
-    practicalObservations: [],
+    testingAndSandboxRules,
+    distributionAndReviewChecklist,
+    practicalObservations,
     explicitUnknowns,
     citations,
   });
