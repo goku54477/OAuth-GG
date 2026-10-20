@@ -21,7 +21,7 @@ Validated implementation commit: `b2fdeb3` (2026-10-20).
 
 ## Outside-catalog acceptance
 
-Status: **Not executed — separate paid-call approval required.**
+Status: **Executed on 2026-10-20 — degraded model outcome recorded.**
 
 Planned request, without credentials:
 
@@ -38,6 +38,12 @@ Official evidence:
 - https://docs.joinmastodon.org/methods/apps/
 - https://docs.joinmastodon.org/client/authorized/
 
-Expected path: provider remains outside the catalog; direct official documentation establishes identity and avoids Exa discovery; one `gpt-5-nano` generation call is permitted only after explicit approval.
+Observed result:
 
-Acceptance will record the returned guide status and unknowns, actual external services used, persistence equality, route/render/export checks, sanitized diagnostics, cost, and tested commit SHA. Until then, no live-acceptance claim is made.
+- Mastodon was absent from the catalog and accepted through the identity-matching `docs.joinmastodon.org` source.
+- Direct documentation retrieval succeeded with one official citation and no Exa discovery.
+- One `gpt-5-nano` attempt was made, but OpenAI returned a sanitized HTTP 401. No raw upstream response or credential data was stored.
+- The resulting `partial-fallback` guide persisted `read`, the source mode, and the official documentation URL; it explicitly marks requested-capability coverage and provider review/configuration requirements as unknown.
+- POST payload, saved record, and later GET payload were identical. The guide route and Markdown export rendered the canonical safe data without a configuration snippet, callback hint, secret-like content, fictional domain, fee, timeline, or audit claim.
+
+The local root cause was subsequently isolated: the server inherited a stale process-level `OPENAI_API_KEY`, which took precedence over the current `.env` value when Next.js started. A direct model-access check using the current `.env` value returned HTTP 200. This validates the outside-catalog, evidence, persistence, rendering, and degraded-mode paths, but not a successful live model completion until a separately approved retry is made with the inherited stale variable cleared.
