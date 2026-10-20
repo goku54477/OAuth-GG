@@ -17,7 +17,11 @@ export interface AuditResult {
 
 const COVERAGE_UNKNOWN = "Requested capability coverage";
 const COVERAGE_UNKNOWN_REASON = "Captured official evidence does not map requested operations to named provider permissions.";
-const SETUP_ACTION = "(?:create|register|configure|add|set|specify|select|enable|generate|use|request|fill(?:\\s+out)?|complete|submit)";
+const SETUP_ACTION = "(?:create|register|configure|add|set|specify|select|enable|generate|use|request|fill(?:\\s+out)?|click|enter|give)";
+const OAUTH_SETUP_CONTEXT = /\b(?:oauth|redirect(?:\s+url)?|callback|authorization|authorize|client(?:\s+(?:id|secret))?|grant|scope)\b/i;
+const APP_REGISTRATION_CONTEXT = /\b(?:register|create|configure)\b.*\b(?:app|application|integration)\b/i;
+const INTEGRATION_DIRECTORY_CONTEXT = /\b(?:submit|review|marketplace|certification|listing|directory)\b/i;
+const TIMELINE_ESTIMATE = /\b(?:takes?|usually|within|approximately|about|around)\b[^.]{0,60}\b(?:hours?|days?|weeks?|months?)\b/i;
 
 function normalizedText(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9:]+/g, " ").trim().replace(/\s+/g, " ");
@@ -55,24 +59,25 @@ function isActionableSetupInstruction(sentence: string): boolean {
     || new RegExp(`\\b(?:need|must|will need|you'll need)\\s+to\\s+${SETUP_ACTION}\\b`, "i").test(value);
 }
 
-function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep | undefined {
-  const candidates = sourceSentences(citation).filter(isActionableSetupInstruction);
-  const instruction = candidates.find((candidate) => /\bplease\b|https?:\/\//i.test(candidate))
-    ?? candidates.find((candidate) => candidate.length > 40)
-    ?? candidates[0];
-  if (!instruction) return undefined;
+function isOAuthSetupInstruction(sentence: string): boolean {
+  if (!isActionableSetupInstruction(sentence) || INTEGRATION_DIRECTORY_CONTEXT.test(sentence)) return false;
+  return OAUTH_SETUP_CONTEXT.test(sentence) || APP_REGISTRATION_CONTEXT.test(sentence);
+}
 
-  return {
-    stepNumber,
-    title: /\boauth\b/i.test(instruction)
-      ? "Configure OAuth application"
-      : "Configure provider application",
-    consolePath: citation.sourceUrl,
-    instructions: instruction,
-    criticalConfigValues: [],
-    epistemicStatus: "source-supported",
-    citationIds: [citation.id],
-  };
+function documentedSetupSteps(citation: EvidenceCitation): SetupStep[] {
+  return sourceSentences(citation)
+    .filter(isOAuthSetupInstruction)
+    .map((instruction) => ({
+      stepNumber: 0,
+      title: OAUTH_SETUP_CONTEXT.test(instruction)
+        ? "Configure OAuth application"
+        : "Configure provider application",
+      consolePath: citation.sourceUrl,
+      instructions: instruction,
+      criticalConfigValues: [],
+      epistemicStatus: "source-supported" as const,
+      citationIds: [citation.id],
+    }));
 }
 
 function sourceBackedClaims(
@@ -92,7 +97,7 @@ function sourceBackedClaims(
 function citationDerivedReviewClaims(citations: EvidenceCitation[]): ClaimItem[] {
   return citations.flatMap((citation) => {
     const claim = sourceSentences(citation).find((sentence) =>
-      /\b(marketplace|certification|review|verification)\b/i.test(sentence),
+      INTEGRATION_DIRECTORY_CONTEXT.test(sentence) && !TIMELINE_ESTIMATE.test(sentence),
     );
     return claim
       ? [{
@@ -155,10 +160,8 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
 
   const citations = guide.citations.filter(isTrustedOfficialCitation);
   const citationById = new Map(citations.map((citation) => [citation.id, citation]));
-  const documentedSteps = citations.flatMap((citation) => {
-    const step = documentedSetupStep(citation, 0);
-    return step ? [step] : [];
-  }).map((step, index) => ({ ...step, stepNumber: index + 1 }));
+  const documentedSteps = citations.flatMap(documentedSetupSteps)
+    .map((step, index) => ({ ...step, stepNumber: index + 1 }));
 
   const variants = guide.variants.map((variant) => {
     const scopes = variant.scopes.flatMap((scope) => {
@@ -222,7 +225,7 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     step.citationIds.some((id) => {
       const citation = citationById.get(id);
       return citationSupportsText(citation, step.instructions)
-        && isActionableSetupInstruction(step.instructions);
+        && Boolean(citation && isOAuthSetupInstruction(step.instructions));
     }),
   ).filter((step) => step.title !== "Consult official provider documentation").map((step) => ({
     ...step,
@@ -232,7 +235,8 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
   }));
 
   const testingAndSandboxRules = sourceBackedClaims(guide.testingAndSandboxRules, citationById);
-  const sourceBackedReviewClaims = sourceBackedClaims(guide.distributionAndReviewChecklist, citationById);
+  const sourceBackedReviewClaims = sourceBackedClaims(guide.distributionAndReviewChecklist, citationById)
+    .filter((item) => !TIMELINE_ESTIMATE.test(item.claim));
   const distributionAndReviewChecklist = sourceBackedReviewClaims.length
     ? sourceBackedReviewClaims
     : citationDerivedReviewClaims(citations);

@@ -321,18 +321,18 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     const migrated = await getGuideBySlug(legacyGuide.slug);
     const markdown = guideToMarkdown(migrated!);
 
-    expect(migrated?.registrationSteps).toEqual([
+    expect(migrated?.registrationSteps).toEqual([]);
+    expect(migrated?.distributionAndReviewChecklist).toEqual([
       expect.objectContaining({
-        instructions: "To submit your app, please complete the form at go.trello.com/dev-support.",
+        claim: "To submit your app, please complete the form at go.trello.com/dev-support.",
         citationIds: ["trello-submission"],
       }),
     ]);
-    expect(migrated?.registrationSteps[0]?.instructions).not.toContain("After you've submitted");
     expect(migrated?.variants[0]?.estimatedReviewTimeline).toBe("Unknown");
     expect(migrated?.variants[0]?.scopes).toEqual([]);
     expect(migrated?.explicitUnknowns).toContain("Captured official evidence does not map requested operations to named provider permissions.");
     expect(markdown).toContain("To submit your app, please complete the form");
-    expect(markdown).not.toContain("### 1. Consult official provider documentation");
+    expect(markdown).not.toContain("## Provider registration");
   });
 
   it("lists only persisted guides; reference guides are resolved separately", async () => {
