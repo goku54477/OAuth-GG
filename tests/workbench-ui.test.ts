@@ -265,11 +265,14 @@ describe("workbench UI trust boundaries", () => {
       ...guide,
       variants: [
         { ...guide.variants[0], scopes: [scope] },
-        { ...guide.variants[0], variantId: "second", scopes: [scope] },
+        { ...guide.variants[0], variantId: "second", scopes: [{ ...scope, citationIds: ["second-source"] }] },
       ],
     };
 
-    expect(getDocumentedScopes(repeated)).toEqual([scope]);
+    expect(getDocumentedScopes(repeated)).toEqual([{
+      ...scope,
+      citationIds: ["stripe-docs", "second-source"],
+    }]);
   });
 
   it("uses epistemic status when labeling managed OAuth", () => {

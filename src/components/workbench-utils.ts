@@ -94,9 +94,15 @@ export function hasSubstantiveGuideComparison(guide: ProviderGuide): boolean {
 }
 
 export function getDocumentedScopes(guide: ProviderGuide) {
-  return [...new Map(
-    guide.variants.flatMap((variant) => variant.scopes).map((scope) => [scope.scope, scope]),
-  ).values()];
+  const scopes = new Map<string, ProviderGuide["variants"][number]["scopes"][number]>();
+  for (const scope of guide.variants.flatMap((variant) => variant.scopes)) {
+    const existing = scopes.get(scope.scope);
+    scopes.set(scope.scope, existing ? {
+      ...existing,
+      citationIds: [...new Set([...existing.citationIds, ...scope.citationIds])],
+    } : scope);
+  }
+  return [...scopes.values()];
 }
 
 export function getGuideGenerationLabel(

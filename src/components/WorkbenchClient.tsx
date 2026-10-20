@@ -91,6 +91,10 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [catalogSegment, setCatalogSegment] = useState<CatalogSegment>("saved");
   const [visibleCatalogCount, setVisibleCatalogCount] = useState(60);
+  const savedGuideSlugs = useMemo(
+    () => new Set(savedGuides.map((guide) => guide.slug)),
+    [savedGuides],
+  );
 
   useEffect(() => {
     setCurrentTab(
@@ -107,7 +111,6 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
 
   const filteredToolkits = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const savedGuideSlugs = new Set(savedGuides.map((guide) => guide.slug));
     return getCatalogSegmentItems(
       initialToolkits,
       catalogSegment,
@@ -126,7 +129,7 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
   }, [
     catalogSegment,
     initialToolkits,
-    savedGuides,
+    savedGuideSlugs,
     searchQuery,
     selectedCategory,
   ]);
@@ -140,7 +143,6 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
   }, [catalogSegment, searchQuery, selectedCategory]);
 
   const guideSlugForToolkit = (toolkit: ComposioToolkitSummary) => {
-    const savedGuideSlugs = new Set(savedGuides.map((guide) => guide.slug));
     if (toolkit.goldenGuideSlug && savedGuideSlugs.has(toolkit.goldenGuideSlug))
       return toolkit.goldenGuideSlug;
     return savedGuideSlugs.has(toolkit.slug) ? toolkit.slug : null;
