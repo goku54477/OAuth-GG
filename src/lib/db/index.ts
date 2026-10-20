@@ -101,14 +101,15 @@ export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
 
 /** Idempotently applies the integrity boundary to LibSQL and JSON records. */
 export async function auditPersistedGuides(): Promise<number> {
-  const guides = new Map<string, ProviderGuide>();
+  const guides = new Map<string, { original: ProviderGuide; canonical: ProviderGuide }>();
   const addPersistedGuide = (guide: ProviderGuide) => {
     // Old database seeds are replaced by their canonical data source rather
     // than normalized in-place; they must never win over reference guides.
     const canonicalReference = guide.generationMode === "golden-verified"
       ? getGoldenGuideBySlug(guide.slug)
       : null;
-    guides.set((canonicalReference ?? guide).slug, canonicalReference ?? guide);
+    const canonical = normalizeGuideForEvidence(canonicalReference ?? guide);
+    guides.set(canonical.slug, { original: guide, canonical });
   };
   for (const guide of Object.values(loadFallbackFile())) {
     const parsed = ProviderGuideSchema.safeParse(guide);
@@ -126,8 +127,14 @@ export async function auditPersistedGuides(): Promise<number> {
       // JSON records remain migratable if a remote query fails.
     }
   }
-  for (const guide of guides.values()) await saveGuide(guide);
-  return guides.size;
+  let changed = 0;
+  for (const { original, canonical } of guides.values()) {
+    if (JSON.stringify(original) !== JSON.stringify(canonical)) {
+      await saveGuide(canonical);
+      changed++;
+    }
+  }
+  return changed;
 }
 
 export async function getGuideBySlug(slug: string): Promise<ProviderGuide | null> {
