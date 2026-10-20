@@ -2,7 +2,12 @@ import { readFile } from "node:fs/promises";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { retrieveProviderEvidence, validateExternalUrl } from "@/lib/research";
+import {
+  classifyProviderAuthority,
+  hasVerifiedProviderIdentity,
+  retrieveProviderEvidence,
+  validateExternalUrl,
+} from "@/lib/research";
 import { searchProviderEvidence } from "@/lib/research/exa-client";
 import { extractHtmlDocument, fetchHtmlDocument } from "@/lib/research/html-extractor";
 
@@ -224,6 +229,36 @@ describe("HTML extraction", () => {
 });
 
 describe("Exa discovery", () => {
+  it("accepts official evidence as identity for a provider outside the catalog", () => {
+    expect(classifyProviderAuthority("Acme Cloud", "https://docs.acmecloud.com/oauth")).toBe(
+      "official-provider-docs",
+    );
+    expect(
+      hasVerifiedProviderIdentity(null, [{
+        citation: {
+          id: "acme-docs",
+          sourceUrl: "https://docs.acmecloud.com/oauth",
+          sourceTitle: "Acme Cloud OAuth",
+          authorityType: "official-provider-docs",
+          retrievedAt: "2026-10-20T00:00:00.000Z",
+          epistemicStatus: "source-supported",
+        },
+        cleanMarkdown: "OAuth setup",
+        highlights: [],
+        retrievalMethod: "exa-auto",
+      }])).toBe(true);
+  });
+
+  it("does not confuse outside-catalog with unverified identity", () => {
+    expect(classifyProviderAuthority("Acme", "https://acme.attacker.example/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(classifyProviderAuthority("Acme", "https://acme.github.io/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(hasVerifiedProviderIdentity(null, [])).toBe(false);
+  });
+
   it("sends the bounded search request and returns sanitized official evidence", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       Response.json({

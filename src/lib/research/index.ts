@@ -1,10 +1,11 @@
 import {
+  type ComposioToolkitSummary,
   LiveResearchRequestSchema,
   type EvidenceCitation,
   type LiveResearchRequest,
 } from "@/types/contracts";
 
-import { searchProviderEvidence } from "./exa-client";
+import { classifyProviderAuthority, searchProviderEvidence } from "./exa-client";
 import { fetchHtmlDocument } from "./html-extractor";
 import { validateExternalUrl } from "./url-guard";
 
@@ -24,6 +25,16 @@ export interface ResearchBundle {
 }
 
 export { validateExternalUrl } from "./url-guard";
+export { classifyProviderAuthority } from "./exa-client";
+
+export function hasVerifiedProviderIdentity(
+  catalogItem: ComposioToolkitSummary | null,
+  documents: RetrievedDocument[],
+): boolean {
+  return Boolean(catalogItem) || documents.some(
+    (document) => document.citation.authorityType === "official-provider-docs",
+  );
+}
 
 function warningMessage(prefix: string): string {
   return prefix;
@@ -47,6 +58,7 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
   if (validation.valid && validation.normalizedUrl) {
     try {
       const document = await fetchHtmlDocument(validation.normalizedUrl);
+      document.citation.authorityType = classifyProviderAuthority(providerQuery, document.citation.sourceUrl);
       return {
         providerQuery,
         targetUrl: validation.normalizedUrl,
