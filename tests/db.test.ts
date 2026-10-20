@@ -342,14 +342,30 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(list.map((item) => item.slug)).not.toContain("gmail-send-vs-modify");
   });
 
-  it("audits persisted records idempotently", async () => {
+  it("writes only changed persisted records and reports zero changes on its second pass", async () => {
+    const existing = fs.existsSync(fallbackPath)
+      ? JSON.parse(fs.readFileSync(fallbackPath, "utf-8"))
+      : {};
+    fs.writeFileSync(fallbackPath, JSON.stringify({
+      ...existing,
+      "idempotent-legacy-record": {
+        ...testGuide,
+        slug: "idempotent-legacy-record",
+        registrationSteps: [{
+          ...testGuide.registrationSteps[0],
+          title: "Consult official provider documentation",
+          instructions: "Linear Developer Documentation",
+        }],
+      },
+    }));
+
     const firstCount = await auditPersistedGuides();
-    const first = await getGuideBySlug("unsafe-live-guide");
+    const first = await getGuideBySlug("idempotent-legacy-record");
     const secondCount = await auditPersistedGuides();
-    const second = await getGuideBySlug("unsafe-live-guide");
+    const second = await getGuideBySlug("idempotent-legacy-record");
 
     expect(firstCount).toBeGreaterThan(0);
-    expect(secondCount).toBe(firstCount);
+    expect(secondCount).toBe(0);
     expect(second).toEqual(first);
   });
 });
