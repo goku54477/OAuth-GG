@@ -60,6 +60,12 @@ function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): Se
   };
 }
 
+function documentedAppType(citations: EvidenceCitation[]): string | undefined {
+  return citations.some((citation) => /oauth2? application/i.test(citation.verbatimQuote ?? ""))
+    ? "OAuth2 Application"
+    : undefined;
+}
+
 export function normalizeReferenceGuideForEvidence(guide: ProviderGuide): ProviderGuide {
   if (guide.generationMode !== "golden-verified") return ProviderGuideSchema.parse(guide);
 
@@ -143,7 +149,7 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
         : "No provider permission could be tied to an official source passage.",
       recommendedAppType: citations.some((citation) => citationSupportsText(citation, variant.recommendedAppType))
         ? variant.recommendedAppType
-        : "Unknown",
+        : documentedAppType(citations) ?? "Unknown",
       approvalGateSummary: "Unknown",
       estimatedReviewTimeline: "Unknown",
       securityAuditRequired: "Unknown",

@@ -290,7 +290,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
         ...githubPublicIssuesGuide.variants[0],
         title: "Linear OAuth2 application",
         summary: "Use an OAuth2 Application for user-authorized Linear access.",
-        recommendedAppType: "OAuth2 Application",
+        recommendedAppType: "Unknown",
         scopes: [{
           ...githubPublicIssuesGuide.variants[0].scopes[0],
           scope: "issues:create",
