@@ -52,13 +52,18 @@ export function isSafeToolkitSlug(slug: string): boolean {
 }
 
 export function isCompleteToolkitDetail(raw: unknown): raw is JsonObject {
+  const meta = isObject(raw) && isObject(raw.meta) ? raw.meta : null;
   return (
     isObject(raw) &&
     typeof raw.slug === "string" &&
     typeof raw.name === "string" &&
     Array.isArray(raw.composio_managed_auth_schemes) &&
     Array.isArray(raw.auth_config_details) &&
-    isObject(raw.meta)
+    meta !== null &&
+    typeof meta.description === "string" &&
+    Array.isArray(meta.categories) &&
+    typeof meta.tools_count === "number" &&
+    typeof meta.triggers_count === "number"
   );
 }
 

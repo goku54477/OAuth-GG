@@ -145,6 +145,27 @@ describe("live metadata fallback", () => {
     });
   });
 
+  it("labels auth-complete but metadata-partial detail as source-supported", async () => {
+    process.env.COMPOSIO_API_KEY = "test-key";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({
+          slug: "github",
+          name: "GitHub",
+          composio_managed_auth_schemes: ["oauth2"],
+          auth_config_details: [{ mode: "oauth2", fields: {} }],
+          meta: {},
+        }),
+      ),
+    );
+
+    await expect(fetchLiveToolkitMetadata("github")).resolves.toMatchObject({
+      summary: { slug: "github" },
+      epistemicStatus: "source-supported",
+    });
+  });
+
   it("falls back on server failure", async () => {
     process.env.COMPOSIO_API_KEY = "test-key";
     vi.stubGlobal(
