@@ -40,6 +40,12 @@ function deriveProviderName(queryOrUrl: string, catalogItem?: ComposioToolkitSum
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
+function generationFailureCategory(error: unknown): string {
+  const candidate = error as { statusCode?: unknown; cause?: { statusCode?: unknown } } | null;
+  const statusCode = candidate?.statusCode ?? candidate?.cause?.statusCode;
+  return typeof statusCode === "number" ? `http-${statusCode}` : "invalid-or-incomplete-model-output";
+}
+
 /**
  * Builds a schema-valid partial fallback ProviderGuide when OPENAI_API_KEY is missing
  * or when research documents lack official provider documentation.
@@ -175,11 +181,13 @@ CRITICAL SECURITY REQUIREMENTS:
       model: openai("gpt-5-nano", { structuredOutputs: false }),
       schema: ProviderGuideSchema,
       mode: "json",
+      maxTokens: 8192,
       prompt,
     });
 
     return ProviderGuideSchema.parse(result.object);
   } catch (error) {
+    console.error("[guide-generation] failed", { category: generationFailureCategory(error) });
     // If AI generation fails for any reason, gracefully fall back to the safe partial guide
     const fallback = buildPartialFallbackGuide(input);
     fallback.explicitUnknowns.push(
