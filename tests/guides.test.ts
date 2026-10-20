@@ -263,7 +263,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(normalized.variants[0].scopes).toEqual([]);
     expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
-    expect(normalized.registrationSteps[0].consolePath).toMatch(/^https:\/\/docs\.github\.com/);
+    expect(normalized.registrationSteps).toEqual([]);
     expect(normalized.explicitUnknowns).toContain("Requested capability coverage");
     expect(normalized.explicitUnknowns.join(" ")).not.toMatch(/casa|al1|al2/i);
     expect(normalized.explicitUnknowns.join(" ")).not.toContain("does not publish");
@@ -326,7 +326,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
       sourceTitle: "Working with OAuth - HubSpot docs",
       authorityType: "official-provider-docs" as const,
       retrievedAt: "2026-10-21T00:00:00.000Z",
-      verbatimQuote: "Create an OAuth app in your developer account. Add the redirect URL to your app settings before users authorize the app.",
+      verbatimQuote: "## OAuth configuration\nAuthentication and authorization\nCreate an OAuth app in your developer account. Add the redirect URL to your app settings before users authorize the app.",
       epistemicStatus: "source-supported" as const,
     };
     const marketplaceCitation = {

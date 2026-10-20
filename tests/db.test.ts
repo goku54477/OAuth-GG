@@ -190,7 +190,7 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(saved).toEqual(retrieved);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
     expect(retrieved?.composioIntegration.customAuthConfigSnippet).toBe("");
-    expect(retrieved?.registrationSteps[0]?.consolePath).toBe(partialGuide.citations[0].sourceUrl);
+    expect(retrieved?.registrationSteps).toEqual([]);
     expect(retrieved?.distributionAndReviewChecklist).toEqual([]);
     expect(retrieved?.explicitUnknowns).toContain("Requested capability coverage");
   });
