@@ -2,6 +2,7 @@ import { createClient, type Client } from "@libsql/client";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { ProviderGuideSchema, type ProviderGuide } from "@/types/contracts";
+import { normalizeGuideForEvidence } from "@/lib/guides/evidence-validator";
 
 export const GMAIL_GUIDE_SEED: ProviderGuide = {
   slug: "gmail-send-vs-modify",
@@ -970,7 +971,7 @@ export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
     throw new Error("Invalid guide object or missing slug");
   }
 
-  const safeGuide = ProviderGuideSchema.parse(guide);
+  const safeGuide = normalizeGuideForEvidence(ProviderGuideSchema.parse(guide));
 
   const client = await getClient();
   if (client) {

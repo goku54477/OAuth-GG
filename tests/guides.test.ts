@@ -7,6 +7,7 @@ import {
   generateOrResolveGuide,
   verifyAndAuditGuide,
   auditGuideWithReport,
+  normalizeGuideForEvidence,
   githubPublicIssuesGuide,
   slackChannelBotGuide,
   gmailSendVsModifyGuide,
@@ -144,8 +145,11 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
       expect(sendScope?.triggersExternalReview).toBe(true);
       expect(sendScope?.triggersSecurityAudit).toBe(false);
 
-      expect(variantA?.estimatedReviewTimeline).toContain("3–7 business days");
-      expect(variantA?.securityAuditRequired.toLowerCase()).toContain("none");
+      expect(variantA?.estimatedReviewTimeline).toBe("Unknown");
+      expect(variantA?.securityAuditRequired).toBe("Unknown");
+
+      const labelsScope = variantA?.scopes.find((scope) => scope.scope.includes("gmail.labels"));
+      expect(labelsScope?.requiredForCapability).toContain("does not apply labels to messages");
 
       // Variant B: Read/Modify Restricted Scope & CASA
       const variantB = guide.variants.find((v) => v.variantId === "gmail-read-modify-restricted");
@@ -154,25 +158,72 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
       expect(readScope?.classification).toBe("restricted");
       expect(readScope?.triggersSecurityAudit).toBe(true);
 
-      expect(variantB?.estimatedReviewTimeline).toContain("4–8+ weeks");
-      expect(variantB?.securityAuditRequired).toContain("CASA Tier AL1/AL2");
+      expect(variantB?.estimatedReviewTimeline).toBe("Unknown");
+      expect(variantB?.securityAuditRequired).toContain("Conditional");
 
-      // Sandbox test user limit rule
-      const sandboxClaim = guide.testingAndSandboxRules.find((r) => r.claim.includes("100"));
-      expect(sandboxClaim).toBeDefined();
-      expect(sandboxClaim?.claim).toContain("capped at 100 manually added test users");
+      expect(guide.testingAndSandboxRules).toEqual([]);
+      expect(guide.explicitUnknowns).toContain("Provider-specific verification timelines, fees, and assessment details");
 
       // Citations
       const urls = guide.citations.map((c) => c.sourceUrl);
       expect(urls).toContain("https://developers.google.com/workspace/gmail/api/auth/scopes");
       expect(urls).toContain(
-        "https://developer.nylas.com/docs/provider-guides/google/google-verification-security-assessment-guide/"
+        "https://developers.google.com/workspace/gmail/api/guides/labels"
       );
     });
   });
 });
 
 describe("Workstream 3: Deterministic Evidence Validator", () => {
+  it("normalizes live guides into citation-backed documentation without invented configuration", () => {
+    const unsafeLiveGuide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      generationMode: "live-researched",
+      completenessStatus: "complete",
+      composioIntegration: {
+        ...githubPublicIssuesGuide.composioIntegration,
+        managedVsCustomVerdict: "Production always requires a custom app.",
+        customAuthConfigSnippet: "redirect_uri=https://example.invalid/callback",
+        composioRedirectUriHint: "https://composio.example.com/oauth/callback",
+      },
+      variants: [{
+        ...githubPublicIssuesGuide.variants[0],
+        summary: "Writes issues with a read-only permission.",
+        recommendedAppType: "OAuth web app",
+        estimatedReviewTimeline: "2-3 days",
+        securityAuditRequired: "CASA required",
+        approvalGateSummary: "External review required",
+        pros: ["Fast approval"],
+        cons: ["Audit cost"],
+        scopes: [{
+          ...githubPublicIssuesGuide.variants[0].scopes[0],
+          scope: "invented:scope",
+          citationIds: ["cite-github-app-vs-oauth"],
+        }],
+      }],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        consolePath: "https://composio.example.com/config",
+        criticalConfigValues: [{ label: "Redirect URI", value: "https://example.invalid" }],
+      }],
+      explicitUnknowns: ["CASA AL1/AL2 requirements"],
+    };
+
+    const normalized = normalizeGuideForEvidence(unsafeLiveGuide);
+
+    expect(normalized.completenessStatus).toBe("partial");
+    expect(normalized.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(normalized.composioIntegration.composioRedirectUriHint).toBe("");
+    expect(normalized.composioIntegration.managedVsCustomVerdict).not.toContain("Production");
+    expect(normalized.variants[0].scopes).toEqual([]);
+    expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
+    expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
+    expect(normalized.registrationSteps[0].consolePath).toMatch(/^https:\/\/docs\.github\.com/);
+    expect(normalized.explicitUnknowns).toContain("Requested capability coverage");
+    expect(normalized.explicitUnknowns.join(" ")).not.toMatch(/casa|al1|al2/i);
+    expect(JSON.stringify(normalized)).not.toContain("composio.example.com");
+  });
+
   it("preserves source-supported status when citations are valid and present in allowedSourceUrls", () => {
     const allowedUrls = [
       "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps",

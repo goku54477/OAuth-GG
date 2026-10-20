@@ -17,7 +17,11 @@ import {
 export { githubPublicIssuesGuide } from "@/data/golden-guides/github-public-issues";
 export { slackChannelBotGuide } from "@/data/golden-guides/slack-channel-bot";
 export { gmailSendVsModifyGuide } from "@/data/golden-guides/gmail-send-vs-modify";
-export { verifyAndAuditGuide, auditGuideWithReport } from "@/lib/guides/evidence-validator";
+export {
+  verifyAndAuditGuide,
+  auditGuideWithReport,
+  normalizeGuideForEvidence,
+} from "@/lib/guides/evidence-validator";
 export { generateStructuredGuide, buildPartialFallbackGuide } from "@/lib/guides/generator";
 
 const goldenGuidesMap = new Map<string, ProviderGuide>([

@@ -164,7 +164,7 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(retrieved?.title).toBe(testGuide.title);
     expect(retrieved?.providerName).toBe("Linear");
     expect(retrieved?.variants.length).toBe(2);
-    expect(retrieved?.variants[0].scopes[0].scope).toBe("read");
+    expect(retrieved?.variants[0].scopes).toEqual([]);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
   });
 
@@ -195,6 +195,25 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(retrieved).toEqual(partialGuide);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
     expect(retrieved?.citations).toEqual(partialGuide.citations);
+  });
+
+  it("normalizes unsafe live-generation configuration before persistence", async () => {
+    const unsafeGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "unsafe-live-guide",
+      composioIntegration: {
+        ...testGuide.composioIntegration,
+        customAuthConfigSnippet: "client_secret=not-a-snippet",
+        composioRedirectUriHint: "https://composio.example.com/callback",
+      },
+    };
+
+    const saved = await saveGuide(unsafeGuide);
+    const retrieved = await getGuideBySlug(unsafeGuide.slug);
+
+    expect(saved.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(saved.composioIntegration.composioRedirectUriHint).toBe("");
+    expect(retrieved).toEqual(saved);
   });
 
   it("should list saved guides including golden and newly saved guides", async () => {

@@ -124,4 +124,28 @@ describe("POST /api/guides/investigate", () => {
     expect(response.status).toBe(500);
     expect(await response.json()).toEqual({ error: "Failed to investigate provider" });
   });
+
+  it("returns canonical golden references without overwriting them in persistence", async () => {
+    mocks.generateOrResolveGuideWithDiagnostics.mockResolvedValueOnce({
+      guide: gmailSendVsModifyGuide,
+      diagnostics: {
+        providerMatched: true,
+        researchDocumentCount: 0,
+        officialDocumentCount: 0,
+        researchDegraded: false,
+        researchWarningCount: 0,
+        modelAttempted: false,
+        generationOutcome: "golden-guide",
+      },
+    });
+
+    const response = await POST(new Request("http://localhost/api/guides/investigate", {
+      method: "POST",
+      body: JSON.stringify({ queryOrUrl: "gmail" }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.saveGuide).not.toHaveBeenCalled();
+    await expect(response.json()).resolves.toMatchObject({ guide: gmailSendVsModifyGuide });
+  });
 });

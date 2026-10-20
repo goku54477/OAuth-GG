@@ -37,7 +37,9 @@ export async function POST(request: Request) {
       researchBundle,
     });
     console.info("[guide-investigation]", generated.diagnostics);
-    const guide = await saveGuide(generated.guide);
+    const guide = generated.diagnostics.generationOutcome === "golden-guide"
+      ? generated.guide
+      : await saveGuide(generated.guide);
     return NextResponse.json({
       guide,
       redirectUrl: `/guides/${guide.slug}`,

@@ -137,6 +137,7 @@ describe("workbench UI trust boundaries", () => {
       variants: [{
         ...guide.variants[0],
         recommendedAppType: "Unknown",
+        approvalGateSummary: "Unknown",
         estimatedReviewTimeline: "Unknown",
         securityAuditRequired: "Unknown",
         scopes: [],
@@ -148,6 +149,33 @@ describe("workbench UI trust boundaries", () => {
     expect(hasSubstantiveGuideComparison(fallback)).toBe(false);
     expect(guideToMarkdown(fallback)).not.toContain("## Standard OAuth");
     expect(guideToMarkdown(fallback)).toContain("## Research incomplete");
+  });
+
+  it("does not treat source-only scope names as a scope-and-review comparison", () => {
+    const documentedOnly: ProviderGuide = {
+      ...guide,
+      variants: [{
+        ...guide.variants[0],
+        recommendedAppType: "Unknown",
+        approvalGateSummary: "Unknown",
+        estimatedReviewTimeline: "Unknown",
+        securityAuditRequired: "Unknown",
+        pros: [],
+        cons: [],
+        scopes: [{
+          scope: "documented:scope",
+          displayName: "documented:scope",
+          classification: "unknown",
+          requiredForCapability: "Provider scope documented; requested capability coverage is not verified.",
+          triggersExternalReview: false,
+          triggersSecurityAudit: false,
+          epistemicStatus: "source-supported",
+          citationIds: ["stripe-docs"],
+        }],
+      }],
+    };
+
+    expect(hasSubstantiveGuideComparison(documentedOnly)).toBe(false);
   });
 
   it("uses epistemic status when labeling managed OAuth", () => {

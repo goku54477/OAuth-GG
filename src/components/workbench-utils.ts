@@ -33,15 +33,19 @@ export function getManagedOAuthLabel(
 
 export function hasSubstantiveGuideComparison(guide: ProviderGuide): boolean {
   return guide.variants.some((variant) =>
-    variant.scopes.length > 0
-    || variant.pros.length > 0
+    variant.pros.length > 0
     || variant.cons.length > 0
     || [
       variant.recommendedAppType,
+      variant.approvalGateSummary,
       variant.estimatedReviewTimeline,
       variant.securityAuditRequired,
     ].some((value) => value.trim().toLowerCase() !== "unknown"),
   );
+}
+
+export function getGuideGenerationLabel(guide: Pick<ProviderGuide, "generationMode">): string {
+  return guide.generationMode === "golden-verified" ? "reference guide" : guide.generationMode;
 }
 
 export function normalizeWorkbenchTab(value: string | null): WorkbenchTab {
@@ -73,7 +77,7 @@ export function guideToMarkdown(guide: ProviderGuide): string {
     `# ${guide.title}`,
     guide.subtitle,
     `- Provider: ${guide.providerName}`,
-    `- Generation mode: ${guide.generationMode}`,
+    `- Generation mode: ${getGuideGenerationLabel(guide)}`,
     `- Completeness: ${guide.completenessStatus}`,
     `- Generated: ${guide.generatedAt}`,
     "## Composio integration",
