@@ -1,0 +1,37 @@
+{
+  "name": "composio-oauth-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "sync:catalog": "tsx scripts/sync-catalog.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^1.0.0",
+    "@libsql/client": "^0.14.0",
+    "@mozilla/readability": "^0.5.0",
+    "ai": "^4.0.0",
+    "linkedom": "^0.18.5",
+    "lucide-react": "^0.460.0",
+    "next": "15.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "turndown": "^7.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/turndown": "^5.0.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.5"
+  }
+}
