@@ -24,6 +24,26 @@ export function getMissingQuoteLabel(): string {
   return "No verbatim quote captured for this citation.";
 }
 
+export function getManagedOAuthLabel(
+  integration: Pick<ProviderGuide["composioIntegration"], "managedOAuthAvailable" | "epistemicStatus">,
+): "Available" | "Unavailable" | "Unknown" {
+  if (integration.epistemicStatus === "unknown") return "Unknown";
+  return integration.managedOAuthAvailable ? "Available" : "Unavailable";
+}
+
+export function hasSubstantiveGuideComparison(guide: ProviderGuide): boolean {
+  return guide.variants.some((variant) =>
+    variant.scopes.length > 0
+    || variant.pros.length > 0
+    || variant.cons.length > 0
+    || [
+      variant.recommendedAppType,
+      variant.estimatedReviewTimeline,
+      variant.securityAuditRequired,
+    ].some((value) => value.trim().toLowerCase() !== "unknown"),
+  );
+}
+
 export function normalizeWorkbenchTab(value: string | null): WorkbenchTab {
   return value === "workbench-catalog" ? value : "interactive-guides";
 }
@@ -36,6 +56,7 @@ export function readGuideRedirect(payload: unknown): string | null {
 }
 
 export function guideToMarkdown(guide: ProviderGuide): string {
+  const hasComparison = hasSubstantiveGuideComparison(guide);
   const claimSection = (title: string, items: ProviderGuide["testingAndSandboxRules"]) =>
     items.length
       ? [
@@ -57,7 +78,7 @@ export function guideToMarkdown(guide: ProviderGuide): string {
     `- Generated: ${guide.generatedAt}`,
     "## Composio integration",
     guide.composioIntegration.managedVsCustomVerdict,
-    `- Managed OAuth: ${guide.composioIntegration.managedOAuthAvailable ? "Available" : "Unavailable"}`,
+    `- Managed OAuth: ${getManagedOAuthLabel(guide.composioIntegration)}`,
     `- Status: ${guide.composioIntegration.epistemicStatus}`,
     ...(guide.composioIntegration.composioRedirectUriHint
       ? [`- Redirect URI hint: ${guide.composioIntegration.composioRedirectUriHint}`]
@@ -65,7 +86,7 @@ export function guideToMarkdown(guide: ProviderGuide): string {
     guide.composioIntegration.customAuthConfigSnippet
       ? `\`\`\`\n${guide.composioIntegration.customAuthConfigSnippet}\n\`\`\``
       : "",
-    ...guide.variants.flatMap((variant) => [
+    ...(hasComparison ? guide.variants.flatMap((variant) => [
       `## ${variant.title}`,
       variant.summary,
       `- Recommended app type: ${variant.recommendedAppType}`,
@@ -77,7 +98,7 @@ export function guideToMarkdown(guide: ProviderGuide): string {
       ),
       ...(variant.pros.length ? ["### Advantages", ...variant.pros.map((item) => `- ${item}`)] : []),
       ...(variant.cons.length ? ["### Constraints", ...variant.cons.map((item) => `- ${item}`)] : []),
-    ]),
+    ]) : ["## Research incomplete", "No substantive capability comparison was verified."]),
     ...(guide.registrationSteps.length
       ? [
           "## Provider registration",

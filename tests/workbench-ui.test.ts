@@ -5,6 +5,8 @@ import {
   formatGuideDate,
   getCitationSourceLabel,
   getMissingQuoteLabel,
+  getManagedOAuthLabel,
+  hasSubstantiveGuideComparison,
   guideToMarkdown,
   normalizeWorkbenchTab,
   readGuideRedirect,
@@ -121,5 +123,36 @@ describe("workbench UI trust boundaries", () => {
     expect(getCitationSourceLabel("secondary-technical")).toBe("Secondary technical source");
     expect(getCitationSourceLabel("practical-inspection")).toBe("Practical inspection source");
     expect(getMissingQuoteLabel()).toBe("No verbatim quote captured for this citation.");
+  });
+
+  it("hides the comparison surface for a placeholder-only fallback", () => {
+    const fallback: ProviderGuide = {
+      ...guide,
+      generationMode: "partial-fallback",
+      composioIntegration: {
+        ...guide.composioIntegration,
+        managedOAuthAvailable: true,
+        epistemicStatus: "observed",
+      },
+      variants: [{
+        ...guide.variants[0],
+        recommendedAppType: "Unknown",
+        estimatedReviewTimeline: "Unknown",
+        securityAuditRequired: "Unknown",
+        scopes: [],
+        pros: [],
+        cons: [],
+      }],
+    };
+
+    expect(hasSubstantiveGuideComparison(fallback)).toBe(false);
+    expect(guideToMarkdown(fallback)).not.toContain("## Standard OAuth");
+    expect(guideToMarkdown(fallback)).toContain("## Research incomplete");
+  });
+
+  it("uses epistemic status when labeling managed OAuth", () => {
+    expect(getManagedOAuthLabel({ managedOAuthAvailable: true, epistemicStatus: "observed" })).toBe("Available");
+    expect(getManagedOAuthLabel({ managedOAuthAvailable: false, epistemicStatus: "observed" })).toBe("Unavailable");
+    expect(getManagedOAuthLabel({ managedOAuthAvailable: false, epistemicStatus: "unknown" })).toBe("Unknown");
   });
 });
