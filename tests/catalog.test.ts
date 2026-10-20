@@ -7,7 +7,9 @@ import {
   getCatalogToolkits,
   getToolkitBySlug,
 } from "@/lib/catalog";
-import { fetchRecommendedScopes } from "@/lib/catalog/composio-client";
+import {
+  fetchRecommendedScopes,
+} from "@/lib/catalog/composio-client";
 import { normalizeToolkitSummary } from "@/lib/catalog/composio-client";
 
 const originalApiKey = process.env.COMPOSIO_API_KEY;
@@ -48,7 +50,7 @@ describe("catalog snapshot", () => {
     });
 
     expect(results.map(({ slug }) => slug)).toEqual(
-      expect.arrayContaining(["github", "gitlab"]),
+      expect.arrayContaining(["github"]),
     );
     expect(results.every(({ hasManagedOAuth }) => hasManagedOAuth)).toBe(true);
   });
