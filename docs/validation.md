@@ -12,7 +12,7 @@ This file distinguishes deterministic verification from external paid acceptance
 
 Validated implementation commit: `b2fdeb3` (2026-10-20).
 
-- `npx vitest run`: 119 tests passed across 8 files at the recorded validation commit. Re-run after every submitted change.
+- `npx vitest run`: 122 tests passed across 8 files at final local validation commit `624ebcf`. Re-run after every submitted change.
 - `npx tsc --noEmit --incremental false`: zero errors.
 - `npm audit --omit=dev --audit-level=high`: zero critical/high production advisories; five low advisories remain in the intentionally unchanged AI SDK major line.
 - `npm run build`: Next.js 15.5.28 production build completed successfully.
