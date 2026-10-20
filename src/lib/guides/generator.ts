@@ -83,7 +83,15 @@ function deriveProviderName(queryOrUrl: string, catalogItem?: ComposioToolkitSum
 }
 
 function generationFailureCategory(error: unknown): string {
-  const candidate = error as { statusCode?: unknown; cause?: { statusCode?: unknown } } | null;
+  const candidate = error as {
+    name?: unknown;
+    finishReason?: unknown;
+    statusCode?: unknown;
+    cause?: { statusCode?: unknown };
+  } | null;
+  if (candidate?.name === "AI_NoObjectGeneratedError" && candidate.finishReason === "length") {
+    return "model-output-truncated";
+  }
   const statusCode = candidate?.statusCode ?? candidate?.cause?.statusCode;
   return typeof statusCode === "number" ? `http-${statusCode}` : "invalid-or-incomplete-model-output";
 }
@@ -249,6 +257,7 @@ ${d.highlights.join("\n")}
   .join("\n\n")}
 
 CRITICAL SECURITY REQUIREMENTS:
+0. Keep every field concise so complete valid JSON fits within the output limit.
 1. Always contrast at least 2 variants: a recommended least-privilege variant (Variant A) and a broader/comparison variant (Variant B).
 2. For every scope, correctly classify as non-sensitive, sensitive, restricted, granular-bot, coarse-repo, or unknown.
 3. Identify external review gates and whether third-party security audits (e.g., CASA Tier AL1/AL2) are triggered.
@@ -257,7 +266,10 @@ CRITICAL SECURITY REQUIREMENTS:
 `;
 
     const result = await generateObject({
-      model: openai("gpt-5-nano", { structuredOutputs: false }),
+      model: openai("gpt-5-nano", {
+        structuredOutputs: false,
+        reasoningEffort: "low",
+      }),
       schema: GeneratedGuideDraftSchema,
       mode: "json",
       maxTokens: 8192,

@@ -63,7 +63,14 @@ describe("live guide generation", () => {
     });
 
     expect(mocks.generateObject).toHaveBeenCalledWith(expect.objectContaining({ maxTokens: 8192 }));
+    expect(mocks.openai).toHaveBeenCalledWith("gpt-5-nano", {
+      structuredOutputs: false,
+      reasoningEffort: "low",
+    });
     expect(mocks.generateObject.mock.calls[0][0].prompt).toContain("Citation ID: stripe-docs");
+    expect(mocks.generateObject.mock.calls[0][0].prompt).toContain(
+      "Keep every field concise so complete valid JSON fits within the output limit.",
+    );
   });
 
   it("assembles identity, catalog metadata, and citations outside model output", async () => {
@@ -150,5 +157,25 @@ describe("live guide generation", () => {
       "Provider identity and official OAuth documentation",
     );
     expect(JSON.stringify(invalid)).not.toContain("test-key");
+  });
+
+  it("reports model truncation without retaining generated text", async () => {
+    mocks.generateObject.mockRejectedValueOnce({
+      name: "AI_NoObjectGeneratedError",
+      finishReason: "length",
+      text: "model-output-that-must-not-leak",
+    });
+
+    const result = await generateStructuredGuideWithDiagnostics({
+      queryOrUrl: "Stripe",
+      catalogItem: stripeCatalog,
+      researchBundle: stripeResearch,
+    });
+
+    expect(result.diagnostics).toMatchObject({
+      generationOutcome: "model-output-invalid",
+      failureCategory: "model-output-truncated",
+    });
+    expect(JSON.stringify(result)).not.toContain("model-output-that-must-not-leak");
   });
 });
