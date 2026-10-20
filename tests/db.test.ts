@@ -153,6 +153,27 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(nonexistent).toBeNull();
   });
 
+  it("sanitizes a legacy partial fallback before returning it", async () => {
+    const legacyFallback: ProviderGuide = {
+      ...testGuide,
+      slug: "legacy-unsafe-fallback-test",
+      generationMode: "partial-fallback",
+      completenessStatus: "partial",
+      composioIntegration: {
+        ...testGuide.composioIntegration,
+        customAuthConfigSnippet: "https://example.com/oauth/authorize",
+        composioRedirectUriHint: "https://backend.composio.dev/api/v1/auth-apps/addRepo/linear",
+      },
+    };
+    await saveGuide(legacyFallback);
+
+    const retrieved = await getGuideBySlug(legacyFallback.slug);
+    expect(retrieved?.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(retrieved?.composioIntegration.composioRedirectUriHint).toBe("");
+    expect(retrieved?.registrationSteps).toEqual([]);
+    expect(retrieved?.variants[0].scopes).toEqual([]);
+  });
+
   it("should list saved guides including golden and newly saved guides", async () => {
     const list = await listSavedGuides();
     expect(Array.isArray(list)).toBe(true);

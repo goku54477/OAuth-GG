@@ -394,7 +394,43 @@ describe("retrieveProviderEvidence", () => {
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].retrievalMethod).toBe("direct-http-readability");
     expect(result.documents[0].cleanMarkdown).toContain("Register the redirect URI");
+    expect(result.degradedMode).toBe(false);
     expect(vi.mocked(fetch).mock.calls[0][0].toString()).toBe("https://93.184.216.34/oauth");
+  });
+
+  it("keeps usable official evidence live when another Exa result is unverified", async () => {
+    vi.stubEnv("EXA_API_KEY", "configured-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({
+          results: [
+            {
+              title: "Acme OAuth",
+              url: "https://docs.acme.com/oauth",
+              text: "Acme OAuth documentation.",
+              highlights: ["Acme OAuth documentation."],
+            },
+            {
+              title: "Unverified notes",
+              url: "https://notes.example.com/acme",
+              text: "Third-party notes.",
+              highlights: ["Third-party notes."],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const result = await retrieveProviderEvidence({
+      queryOrUrl: "Acme",
+      capabilities: ["read"],
+      forceRefresh: false,
+    });
+
+    expect(result.documents).toHaveLength(2);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.degradedMode).toBe(false);
   });
 
   it("fails closed for a URL-like value rejected by the URL guard", async () => {

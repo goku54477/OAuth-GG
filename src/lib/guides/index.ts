@@ -86,9 +86,9 @@ export async function generateOrResolveGuide(input: {
   const generatedGuide = await generateStructuredGuide(input);
 
   // 3. Extract allowed source URLs from research bundle documents
-  const allowedUrls = (input.researchBundle?.documents || []).map(
-    (d) => d.citation.sourceUrl
-  );
+  const allowedUrls = (input.researchBundle?.documents || [])
+    .filter((document) => document.citation.authorityType === "official-provider-docs")
+    .map((document) => document.citation.sourceUrl);
 
   // 4. Deterministically audit citations and claims
   return verifyAndAuditGuide(generatedGuide, allowedUrls);

@@ -25,8 +25,8 @@ export interface ResearchBundle {
 
 export { validateExternalUrl } from "./url-guard";
 
-function warningMessage(prefix: string, error: unknown): string {
-  return error instanceof Error ? `${prefix}: ${error.message}` : prefix;
+function warningMessage(prefix: string): string {
+  return prefix;
 }
 
 export async function retrieveProviderEvidence(req: LiveResearchRequest): Promise<ResearchBundle> {
@@ -51,15 +51,15 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
         providerQuery,
         targetUrl: validation.normalizedUrl,
         documents: [document],
-        warnings: ["Provider ownership could not be verified for the supplied URL"],
-        degradedMode: true,
+        warnings: [],
+        degradedMode: false,
       };
-    } catch (error) {
+    } catch {
       return {
         providerQuery,
         targetUrl: validation.normalizedUrl,
         documents: [],
-        warnings: [warningMessage("Direct documentation fetch failed", error)],
+        warnings: [warningMessage("Direct documentation fetch failed")],
         degradedMode: true,
       };
     }
@@ -80,13 +80,13 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
       providerQuery,
       documents: result.documents,
       warnings: result.warnings,
-      degradedMode: result.documents.length === 0 || result.warnings.length > 0,
+      degradedMode: result.documents.length === 0,
     };
-  } catch (error) {
+  } catch {
     return {
       providerQuery,
       documents: [],
-      warnings: [warningMessage("Exa provider discovery failed", error)],
+      warnings: [warningMessage("Exa provider discovery failed")],
       degradedMode: true,
     };
   }

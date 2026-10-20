@@ -54,6 +54,33 @@ export async function getToolkitBySlug(
   return toolkit ? cloneToolkit(toolkit) : null;
 }
 
+const GENERIC_HOST_LABELS = new Set(["www", "api", "app", "docs", "developer", "developers", "com", "net", "org", "io"]);
+
+/** Resolve an exact catalog slug from a provider name or documentation URL. */
+export async function getToolkitByQuery(queryOrUrl: string): Promise<ComposioToolkitSummary | null> {
+  const query = queryOrUrl.trim().toLowerCase();
+  const direct = bySlug.get(query);
+  if (direct) return cloneToolkit(direct);
+
+  try {
+    const hostname = new URL(query).hostname.replace(/^www\./, "");
+    const known = hostname.includes("github.com") ? "github"
+      : hostname.includes("slack.com") ? "slack"
+      : hostname.includes("google.com") || hostname.includes("gmail.com") ? "gmail"
+      : null;
+    if (known && bySlug.has(known)) return cloneToolkit(bySlug.get(known)!);
+
+    for (const label of hostname.split(".").filter((label) => !GENERIC_HOST_LABELS.has(label))) {
+      const toolkit = bySlug.get(label);
+      if (toolkit) return cloneToolkit(toolkit);
+    }
+  } catch {
+    // Non-URL queries are only accepted as exact catalog slugs.
+  }
+
+  return null;
+}
+
 export async function fetchLiveToolkitMetadata(slug: string): Promise<{
   summary: ComposioToolkitSummary;
   rawAuthConfigDetails: unknown;

@@ -45,20 +45,21 @@ function deriveProviderName(queryOrUrl: string, catalogItem?: ComposioToolkitSum
  * or when research documents lack official provider documentation.
  */
 export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGuide {
-  const { queryOrUrl, catalogItem, researchBundle, capabilities = ["read", "write"] } = input;
+  const { queryOrUrl, catalogItem, researchBundle } = input;
   const providerName = deriveProviderName(queryOrUrl, catalogItem);
   const slug = catalogItem?.slug || slugify(queryOrUrl) || "unknown-provider";
   const now = new Date().toISOString();
 
-  const citations: EvidenceCitation[] = (researchBundle?.documents || []).map((d) => d.citation);
+  const citations: EvidenceCitation[] = (catalogItem ? researchBundle?.documents || [] : [])
+    .filter((document) => document.citation.authorityType === "official-provider-docs")
+    .map((document) => document.citation);
 
   const fallbackGuide: ProviderGuide = {
     slug,
     providerName,
     toolkitSlug: catalogItem?.slug,
     title: `${providerName} Integration & OAuth Guide (Partial Reference)`,
-    subtitle:
-      "Automated baseline fallback guide generated without active LLM provider key or verified official documentation",
+    subtitle: "Provider-specific OAuth configuration could not be verified from trusted evidence.",
     generatedAt: now,
     generationMode: "partial-fallback",
     completenessStatus: "partial",
@@ -66,119 +67,55 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
       managedOAuthAvailable: catalogItem?.hasManagedOAuth ?? false,
       managedVsCustomVerdict: catalogItem?.hasManagedOAuth
         ? "Composio Managed OAuth is available for rapid prototyping, but custom auth_configs should be evaluated for enterprise production."
-        : "Composio managed OAuth is not available or unverified for this provider. Custom OAuth app credentials must be configured.",
-      customAuthConfigSnippet: JSON.stringify(
-        {
-          auth_mode: "OAUTH2",
-          client_id: `{{${slug.toUpperCase().replace(/-/g, "_")}_CLIENT_ID}}`,
-          client_secret: `{{${slug.toUpperCase().replace(/-/g, "_")}_CLIENT_SECRET}}`,
-          authorization_url: "https://example.com/oauth/authorize",
-          token_url: "https://example.com/oauth/token",
-          redirect_uri: `https://backend.composio.dev/api/v1/auth-apps/addRepo/${slug}`,
-        },
-        null,
-        2
-      ),
-      composioRedirectUriHint: `https://backend.composio.dev/api/v1/auth-apps/addRepo/${slug}`,
+        : "Composio managed OAuth availability is unknown because this provider is not matched to catalog metadata.",
+      customAuthConfigSnippet: "",
+      composioRedirectUriHint: "",
       epistemicStatus: catalogItem ? "observed" : "unknown",
       citationIds: citations.map((c) => c.id),
     },
     variants: [
       {
         variantId: `${slug}-baseline-oauth`,
-        title: `${providerName} Standard OAuth Integration`,
-        summary: `Baseline OAuth 2.0 configuration for ${providerName}. Exact permission tiers, sensitive classifications, and security reviews require manual verification against official vendor docs.`,
-        recommendedAppType: "OAuth 2.0 Web Application",
-        scopes: capabilities.map((cap) => ({
-          scope: cap,
-          displayName: `${cap.charAt(0).toUpperCase() + cap.slice(1)} Scope`,
-          classification: "unknown" as const,
-          requiredForCapability: `Required for ${cap} operations`,
-          triggersExternalReview: false,
-          triggersSecurityAudit: false,
-          epistemicStatus: "unknown" as const,
-          citationIds: [],
-        })),
+        title: "Partial evidence record",
+        summary: "No provider-specific OAuth application type, scope names, or configuration values are presented without trusted supporting evidence.",
+        recommendedAppType: "Unknown",
+        scopes: [],
         approvalGateSummary:
           "Provider approval requirements and external review gates are currently unknown and unverified.",
         estimatedReviewTimeline: "Unknown",
         securityAuditRequired: "Unknown",
-        pros: [
-          "Establishes initial baseline integration structure",
-          "Includes standard Composio redirect URI pattern",
-        ],
-        cons: [
-          "Scope sensitivity tiers and third-party security audit triggers require manual review",
-          "Verification turnaround timeline is unverified",
-        ],
+        pros: [],
+        cons: [],
       },
     ],
-    registrationSteps: [
-      {
-        stepNumber: 1,
-        title: `Create ${providerName} Developer Project`,
-        consolePath: `${providerName} Developer Portal > Applications`,
-        instructions:
-          "Navigate to the developer portal for this provider, register your developer account, and create a new OAuth 2.0 application or client credential.",
-        criticalConfigValues: [
-          {
-            label: "Callback URL",
-            value: `https://backend.composio.dev/api/v1/auth-apps/addRepo/${slug}`,
-          },
-        ],
-        epistemicStatus: "unknown",
-        citationIds: [],
-      },
-      {
-        stepNumber: 2,
-        title: "Record Client Credentials in Composio",
-        consolePath: "Composio Settings > Auth Configs",
-        instructions:
-          "Save the generated Client ID and Client Secret into your Composio app configuration or environment variables.",
-        criticalConfigValues: [
-          {
-            label: "Client ID",
-            value: "Recorded from provider console",
-          },
-          {
-            label: "Client Secret",
-            value: "Recorded from provider console",
-          },
-        ],
-        epistemicStatus: "unknown",
-        citationIds: [],
-      },
-    ],
+    registrationSteps: [],
     testingAndSandboxRules: [
       {
-        claim:
-          "Sandbox quotas, test user limits, and token expiration defaults are unverified for this provider.",
+        claim: "No provider-specific testing or sandbox rules were verified.",
         epistemicStatus: "unknown",
         citationIds: [],
-        notes: "Consult the provider developer documentation for testing constraints.",
+        notes: "Consult official provider documentation before implementation.",
       },
     ],
     distributionAndReviewChecklist: [
       {
-        claim:
-          "Production app verification and security assessment prerequisites must be validated before exposing app to external users.",
+        claim: "No provider-specific production review requirements were verified.",
         epistemicStatus: "unknown",
         citationIds: [],
       },
     ],
     practicalObservations: [
       {
-        claim:
-          "Live AI synthesis was skipped due to missing API key or absence of official provider documentation in the research bundle.",
+        claim: "This partial record intentionally omits unverified OAuth configuration and permission claims.",
         epistemicStatus: "unknown",
         citationIds: [],
       },
     ],
     explicitUnknowns: [
-      "Exact provider sensitive and restricted scope definitions",
-      "Mandatory third-party security audits (e.g. CASA, SOC 2, or vendor assessments)",
-      "Developer portal sandbox user quotas and refresh token lifespans",
-      "Production verification review timeline and requirements",
+      "Provider identity and official OAuth documentation",
+      "OAuth application type, callback URL, and client-credential requirements",
+      "Permission scopes and sensitivity classifications",
+      "Testing, review, and security-audit requirements",
     ],
     citations,
   };
@@ -188,18 +125,17 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
 
 /**
  * Generates a structured ProviderGuide using Vercel AI SDK when OPENAI_API_KEY is present
- * and official documentation exists in the research bundle; otherwise falls back to a deterministic partial guide.
+ * and verified official documentation exists in the research bundle; otherwise falls back to an evidence-limited guide.
  */
 export async function generateStructuredGuide(input: GenerateGuideInput): Promise<ProviderGuide> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const docs = input.researchBundle?.documents || [];
-  const hasOfficialDocs = docs.some(
-    (d) => d.citation.authorityType === "official-provider-docs"
+  const docs = (input.researchBundle?.documents || []).filter(
+    (document) => document.citation.authorityType === "official-provider-docs",
   );
-  const isDegraded = input.researchBundle?.degradedMode ?? false;
+  const hasOfficialDocs = docs.length > 0;
 
-  // If no OpenAI key or no official docs or degraded research bundle, return truthful fallback
-  if (!apiKey || !hasOfficialDocs || isDegraded) {
+  // Warnings may coexist with usable official evidence; only missing key/evidence blocks synthesis.
+  if (!apiKey || !input.catalogItem || !hasOfficialDocs) {
     return buildPartialFallbackGuide(input);
   }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ProviderGuideSchema, type ProviderGuide } from "@/types/contracts";
 import {
+  buildPartialFallbackGuide,
   getGoldenGuideBySlug,
   listGoldenGuides,
   generateOrResolveGuide,
@@ -331,10 +332,44 @@ describe("Workstream 3: Decision Engine & Guide Generator", () => {
       expect(fallbackGuide.generationMode).toBe("partial-fallback");
       expect(fallbackGuide.completenessStatus).toBe("partial");
       expect(fallbackGuide.explicitUnknowns.length).toBeGreaterThan(0);
+      expect(fallbackGuide.composioIntegration.customAuthConfigSnippet).toBe("");
+      expect(fallbackGuide.composioIntegration.composioRedirectUriHint).toBe("");
+      expect(fallbackGuide.registrationSteps).toEqual([]);
+      expect(fallbackGuide.variants[0].scopes).toEqual([]);
+      expect(JSON.stringify(fallbackGuide)).not.toContain("example.com/oauth");
       expect(ProviderGuideSchema.parse(fallbackGuide)).toBeDefined();
     } finally {
       if (originalKey) process.env.OPENAI_API_KEY = originalKey;
     }
+  });
+
+  it("does not attach provider-looking evidence to an unmatched provider fallback", () => {
+    const guide = buildPartialFallbackGuide({
+      queryOrUrl: "AuthBenchTestApp-739",
+      researchBundle: {
+        providerQuery: "AuthBenchTestApp-739",
+        warnings: [],
+        degradedMode: false,
+        documents: [{
+          citation: {
+            id: "citation-provider-looking",
+            sourceUrl: "https://docs.authbenchtestapp-739.example/oauth",
+            sourceTitle: "Unverified documentation",
+            authorityType: "official-provider-docs",
+            retrievedAt: "2026-10-20T00:00:00.000Z",
+            verbatimQuote: "OAuth details",
+            epistemicStatus: "source-supported",
+          },
+          cleanMarkdown: "OAuth details",
+          highlights: ["OAuth details"],
+          retrievalMethod: "exa-auto",
+        }],
+      },
+    });
+
+    expect(guide.toolkitSlug).toBeUndefined();
+    expect(guide.citations).toEqual([]);
+    expect(guide.variants[0].scopes).toEqual([]);
   });
 
   it("lists all golden guides via listGoldenGuides", () => {

@@ -94,7 +94,7 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
           </div>
           <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/10 bg-white/10 text-sm">
             <div className="bg-[#0e1015] p-4"><dt className="text-[10px] uppercase tracking-wider text-zinc-600">Generated</dt><dd className="mt-2 font-mono text-xs text-zinc-300">{formatGuideDate(guide.generatedAt)}</dd></div>
-            <div className="bg-[#0e1015] p-4"><dt className="text-[10px] uppercase tracking-wider text-zinc-600">Managed OAuth</dt><dd className="mt-2 font-mono text-xs text-zinc-300">{guide.composioIntegration.managedOAuthAvailable ? "Available" : "Unavailable"}</dd></div>
+            <div className="bg-[#0e1015] p-4"><dt className="text-[10px] uppercase tracking-wider text-zinc-600">Managed OAuth</dt><dd className="mt-2 font-mono text-xs text-zinc-300">{guide.composioIntegration.epistemicStatus === "unknown" ? "Unknown" : guide.composioIntegration.managedOAuthAvailable ? "Available" : "Unavailable"}</dd></div>
           </dl>
         </section>
 

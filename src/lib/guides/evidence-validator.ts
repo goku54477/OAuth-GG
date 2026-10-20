@@ -87,10 +87,7 @@ export function auditGuideWithReport(
 
   // 1. Audit citations
   const auditedCitations: EvidenceCitation[] = guide.citations.map((citation) => {
-    const isLive = guide.generationMode === "live-researched";
-    const urlAllowed = isLive || allowedSourceUrls.length > 0
-      ? isUrlAllowed(citation.sourceUrl, allowedSourceUrls)
-      : true;
+    const urlAllowed = isUrlAllowed(citation.sourceUrl, allowedSourceUrls);
 
     const hasVerbatimQuote =
       typeof citation.verbatimQuote === "string" &&
