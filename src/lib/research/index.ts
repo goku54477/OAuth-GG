@@ -1,4 +1,12 @@
-import type { EvidenceCitation } from "@/types/contracts";
+import {
+  LiveResearchRequestSchema,
+  type EvidenceCitation,
+  type LiveResearchRequest,
+} from "@/types/contracts";
+
+import { searchProviderEvidence } from "./exa-client";
+import { fetchHtmlDocument } from "./html-extractor";
+import { validateExternalUrl } from "./url-guard";
 
 export interface RetrievedDocument {
   citation: EvidenceCitation;
@@ -16,3 +24,70 @@ export interface ResearchBundle {
 }
 
 export { validateExternalUrl } from "./url-guard";
+
+function warningMessage(prefix: string, error: unknown): string {
+  return error instanceof Error ? `${prefix}: ${error.message}` : prefix;
+}
+
+export async function retrieveProviderEvidence(req: LiveResearchRequest): Promise<ResearchBundle> {
+  const parsed = LiveResearchRequestSchema.parse(req);
+  const providerQuery = parsed.queryOrUrl.trim();
+  const validation = validateExternalUrl(providerQuery);
+  const looksLikeUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(providerQuery);
+
+  if (looksLikeUrl && (!validation.valid || !validation.normalizedUrl)) {
+    return {
+      providerQuery,
+      documents: [],
+      warnings: [validation.reason ?? "URL is not allowed"],
+      degradedMode: true,
+    };
+  }
+
+  if (validation.valid && validation.normalizedUrl) {
+    try {
+      const document = await fetchHtmlDocument(validation.normalizedUrl);
+      return {
+        providerQuery,
+        targetUrl: validation.normalizedUrl,
+        documents: [document],
+        warnings: ["Provider ownership could not be verified for the supplied URL"],
+        degradedMode: true,
+      };
+    } catch (error) {
+      return {
+        providerQuery,
+        targetUrl: validation.normalizedUrl,
+        documents: [],
+        warnings: [warningMessage("Direct documentation fetch failed", error)],
+        degradedMode: true,
+      };
+    }
+  }
+
+  if (!process.env.EXA_API_KEY) {
+    return {
+      providerQuery,
+      documents: [],
+      warnings: ["EXA_API_KEY is not configured; live provider discovery is unavailable"],
+      degradedMode: true,
+    };
+  }
+
+  try {
+    const result = await searchProviderEvidence(providerQuery, parsed.capabilities);
+    return {
+      providerQuery,
+      documents: result.documents,
+      warnings: result.warnings,
+      degradedMode: result.documents.length === 0 || result.warnings.length > 0,
+    };
+  } catch (error) {
+    return {
+      providerQuery,
+      documents: [],
+      warnings: [warningMessage("Exa provider discovery failed", error)],
+      degradedMode: true,
+    };
+  }
+}
