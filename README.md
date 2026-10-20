@@ -1,67 +1,92 @@
-# OAuth Registration, Scope-Delta & App-Review Readiness Workbench
+# AuthBench — OAuth Readiness Guide Library and Research Workbench
 
-OAuth-GG helps developers decide how to register OAuth apps, request least-privilege scopes, and prepare for provider review. It combines a live Composio toolkit catalog with researched evidence and deterministic guide generation.
+AuthBench helps developers investigate how an integration authenticates, which documented permissions relate to a requested capability, and which provider-review questions remain unresolved. It favors explicit unknowns over unsupported claims.
 
-## Architecture D
+## Assignment alignment
 
-- **Composio catalog:** 1,619-toolkit snapshot, searchable by name, category, and managed OAuth availability.
-- **Golden guides:** verified GitHub, Slack, and Gmail reference guides.
-- **Decision router:** deterministic mapping from provider/capability input to a golden guide or a generated guide.
-- **Live research:** Exa discovery plus direct HTML/Readability extraction; SSRF guards reject unsafe URLs.
-- **Citation auditor:** validates evidence URLs and downgrades unsupported claims.
-- **Persistence:** libSQL when configured, with JSON fallback for local development.
+- Browse a tracked snapshot of 1,619 Composio integrations and their observed authentication metadata.
+- Compare three audited reference examples: GitHub, Slack, and Gmail.
+- Generate and persist evidence-aware guides for catalog and verified outside-catalog providers.
+- Inspect official citations, epistemic status, requested capabilities, setup guidance, and unresolved questions.
+- Share a guide URL or export the same canonical guide as Markdown.
 
-## Key findings
+## Architecture and data flow
 
-### GitHub
+1. The workbench reads the tracked Composio catalog snapshot and saved guide summaries.
+2. `POST /api/guides/investigate` validates an application name, requested capabilities, and an optional official documentation URL.
+3. Catalog entries establish identity from snapshot metadata. Outside-catalog entries must establish identity and OAuth support from an identity-matching official domain.
+4. Direct official documentation is fetched through the SSRF guard and does not require Exa discovery. Otherwise, Exa can discover candidate official sources and Readability extracts their content.
+5. `gpt-5-nano` produces a structured draft when configured. Deterministic integrity normalization then removes unsupported claims, fictional configuration, invalid citations, and unverified scope coverage.
+6. The canonical guide is persisted with libSQL/Turso and returned in the same API response. Reference guides remain canonical source data and are not duplicated into persistence.
+7. The guide page and Markdown export render the persisted `ProviderGuide` without inventing missing fields.
 
-A GitHub App can use repository-level permissions for the narrowly defined public-issues use case. A legacy OAuth App using `public_repo` has a broader grant. Prefer the smallest capability boundary that meets the product requirement.
+Local development can use a file-backed libSQL database and JSON fallback. Production requires durable Turso credentials; a serverless deployment must not rely on the writable filesystem.
 
-### Slack
+## Catalog and research paths
 
-Slack OAuth v2 uses granular bot scopes. Multi-workspace distribution can use Manage Distribution; Slack Marketplace publication is a separate review path. Request only required bot scopes and treat public Marketplace distribution as an additional approval gate.
+- **Saved guides:** catalog entries with an existing reference or persisted guide.
+- **OAuth apps:** entries whose observed authentication schemes contain OAuth metadata, including managed OAuth where reported.
+- **All integrations:** every snapshot entry, including integrations whose auth path still needs checking.
+- **Outside catalog:** supply the provider name separately from an official HTTPS OAuth-documentation URL. A mismatched, lookalike, private-network, malformed, or unverifiable source is rejected.
 
-### Gmail
+## Reference findings
 
-`gmail.send` is sensitive, while `gmail.modify` is restricted. Restricted Gmail scopes can require a CASA security assessment for eligible public production apps. Prefer send-only capability when mailbox modification is not required.
+- **GitHub:** a GitHub App can use repository-level Issues permission, while the legacy OAuth `public_repo` scope grants broader public-repository access.
+- **Slack:** granular bot scopes such as `channels:history` and `chat:write` serve different capabilities. Unlisted multi-workspace distribution and Slack Marketplace publication are distinct paths.
+- **Gmail:** `gmail.send` is Sensitive and `gmail.modify` is Restricted. `gmail.labels` manages label resources; applying or removing labels on messages uses `messages.modify` and requires `gmail.modify`. Security-assessment applicability depends on restricted-data handling and must be evaluated from current Google requirements.
 
-## Epistemic status policy
+## Evidence and epistemic status
 
-Every claim and citation carries one status:
+- `source-supported`: supported by an attached official passage.
+- `observed`: observed from catalog or retrieval metadata, not promoted to a universal provider fact.
+- `tested`: established by a deterministic test or controlled validation.
+- `recommendation`: advice, clearly separated from factual claims.
+- `estimated`: an explicitly labeled estimate.
+- `unknown`: evidence is insufficient.
 
-- `source-supported` — supported by cited provider or authoritative documentation.
-- `observed` — observed from live Composio metadata or retrieval output.
-- `tested` — validated by automated tests.
-- `estimated` — a clearly labeled estimate.
-- `unknown` — not yet supported by reliable evidence.
+The integrity normalizer allowlists official HTTPS evidence, rejects unknown citation IDs, removes unproven configuration and review claims, and keeps requested-capability coverage unknown unless the captured source establishes it. Partial guides are useful research records, not claims of completeness.
 
-The citation auditor rejects untrusted evidence URLs and preserves explicit unknowns instead of inventing certainty.
+## Environment variables
 
-## Local setup
-
-```powershell
-npm install
-Copy-Item .env.example .env
-```
-
-Set only values you need in `.env`:
+Copy `.env.example` to `.env`. Never commit credentials and never expose these values with a `NEXT_PUBLIC_` prefix.
 
 ```dotenv
 COMPOSIO_API_KEY=
 EXA_API_KEY=
+OPENAI_API_KEY=
 TURSO_DATABASE_URL=
 TURSO_AUTH_TOKEN=
 ```
 
-`COMPOSIO_API_KEY` must be a Platform Project API key. Do not commit `.env`.
+- `COMPOSIO_API_KEY`: refreshes catalog metadata and supports Composio API access.
+- `EXA_API_KEY`: optional discovery when direct official documentation is not supplied.
+- `OPENAI_API_KEY`: optional live structured generation using `gpt-5-nano`.
+- `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`: required together for durable production persistence.
 
-## Commands
+Missing research or generation credentials produce an honest degraded/partial result where possible; raw upstream errors and credential fragments are not returned to the UI or stored in guides.
+
+## Local setup and commands
 
 ```powershell
+npm install
+Copy-Item .env.example .env
 npm run dev
-npm test
-npm run build
-npm run sync:catalog
 ```
 
-`npm run sync:catalog` refreshes the tracked Composio snapshot when `COMPOSIO_API_KEY` is set. It validates the response and preserves the current snapshot if the response is incomplete.
+```powershell
+npm test
+npx tsc --noEmit --incremental false
+npm run build
+npm run sync:catalog
+npm run audit:guides
+```
+
+- `sync:catalog` validates a fresh Composio response before replacing the tracked snapshot.
+- `audit:guides` idempotently normalizes existing persisted guides with the current integrity policy.
+
+## Current limitations
+
+- AuthBench does not register provider applications, supply credentials, submit reviews, or guarantee provider approval.
+- Provider policies change; generated dates and citations identify the evidence available to a guide.
+- Review timing, fees, audits, classifications, callbacks, and production requirements remain hidden or Unknown unless official evidence supports their applicability.
+- The repository includes deterministic fixtures and mocked generation checks. A paid live check is recorded only when it has actually run; see [the validation record](docs/validation.md).

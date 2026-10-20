@@ -15,6 +15,134 @@ export interface AuditResult {
   unverifiedCitationIds: string[];
 }
 
+const COVERAGE_UNKNOWN = "Requested capability coverage";
+
+export function normalizeReferenceGuideForEvidence(guide: ProviderGuide): ProviderGuide {
+  if (guide.generationMode !== "golden-verified") return ProviderGuideSchema.parse(guide);
+
+  return ProviderGuideSchema.parse({
+    ...guide,
+    composioIntegration: {
+      ...guide.composioIntegration,
+      managedVsCustomVerdict: guide.composioIntegration.epistemicStatus === "unknown"
+        ? "Composio managed OAuth availability is unknown because no catalog metadata is available."
+        : "Managed OAuth availability is reported by current Composio catalog metadata. Production suitability is not inferred.",
+      customAuthConfigSnippet: "",
+      composioRedirectUriHint: "",
+    },
+    variants: guide.variants.map((variant) => ({
+      ...variant,
+      estimatedReviewTimeline: "Unknown",
+      securityAuditRequired: "Unknown",
+    })),
+  });
+}
+
+function isTrustedOfficialCitation(citation: EvidenceCitation): boolean {
+  return citation.authorityType === "official-provider-docs"
+    && citation.epistemicStatus === "source-supported"
+    && citation.sourceUrl.startsWith("https://")
+    && Boolean(citation.verbatimQuote?.trim());
+}
+
+/**
+ * Reduces a live model draft to information the current contract can trace to
+ * official source passages. The contract has no field-level configuration or
+ * review provenance, so those values must stay absent rather than guessed.
+ */
+export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
+  // Curated reference guides are canonical source data. Generated and fallback
+  // records cross the same conservative boundary before persistence.
+  if (guide.generationMode === "golden-verified") {
+    return normalizeReferenceGuideForEvidence(guide);
+  }
+
+  const citations = guide.citations.filter(isTrustedOfficialCitation);
+  const citationById = new Map(citations.map((citation) => [citation.id, citation]));
+  const documentedSteps = citations.map((citation, index): SetupStep => ({
+    stepNumber: index + 1,
+    title: "Consult official provider documentation",
+    consolePath: citation.sourceUrl,
+    instructions: citation.sourceTitle,
+    criticalConfigValues: [],
+    epistemicStatus: "source-supported",
+    citationIds: [citation.id],
+  }));
+
+  const variants = guide.variants.map((variant) => {
+    const scopes = variant.scopes.flatMap((scope) => {
+      const normalizedScope = scope.scope.trim();
+      // Generic words such as "read" do not establish a named OAuth scope.
+      if (normalizedScope.length < 4) return [];
+      const scopePattern = new RegExp(
+        `(^|[^a-z0-9:_-])${normalizedScope.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9:_-])`,
+        "i",
+      );
+      const citationIds = scope.citationIds.filter((id) => {
+        const citation = citationById.get(id);
+        return Boolean(citation?.verbatimQuote && scopePattern.test(citation.verbatimQuote));
+      });
+      if (citationIds.length === 0) return [];
+      return [{
+        ...scope,
+        displayName: scope.scope,
+        classification: "unknown" as const,
+        requiredForCapability: "Provider scope documented; requested capability coverage is not verified.",
+        triggersExternalReview: false,
+        triggersSecurityAudit: false,
+        leastPrivilegeAlternative: undefined,
+        epistemicStatus: "source-supported" as const,
+        citationIds,
+      }];
+    });
+
+    return {
+      ...variant,
+      title: "Documented provider permissions",
+      summary: scopes.length
+        ? "Provider permission names are documented below; coverage for the requested workflow is not verified."
+        : "No provider permission could be tied to an official source passage.",
+      recommendedAppType: "Unknown",
+      approvalGateSummary: "Unknown",
+      estimatedReviewTimeline: "Unknown",
+      securityAuditRequired: "Unknown",
+      pros: [],
+      cons: [],
+      scopes,
+    };
+  });
+
+  const explicitUnknowns = [
+    COVERAGE_UNKNOWN,
+    "Provider review, audit, and configuration requirements",
+  ];
+  const hasCatalogMetadata = guide.composioIntegration.epistemicStatus !== "unknown";
+
+  return ProviderGuideSchema.parse({
+    ...guide,
+    title: `${guide.providerName} Integration & OAuth Guide (Partial Reference)`,
+    subtitle: "Provider-specific OAuth configuration could not be fully verified from trusted evidence.",
+    completenessStatus: "partial",
+    composioIntegration: {
+      managedOAuthAvailable: guide.composioIntegration.managedOAuthAvailable,
+      managedVsCustomVerdict: hasCatalogMetadata
+        ? "Managed OAuth availability is reported by current Composio catalog metadata."
+        : "Composio managed OAuth availability is unknown because no catalog metadata is available.",
+      customAuthConfigSnippet: "",
+      composioRedirectUriHint: "",
+      epistemicStatus: guide.composioIntegration.epistemicStatus,
+      citationIds: guide.composioIntegration.citationIds.filter((id) => citationById.has(id)),
+    },
+    variants,
+    registrationSteps: documentedSteps,
+    testingAndSandboxRules: [],
+    distributionAndReviewChecklist: [],
+    practicalObservations: [],
+    explicitUnknowns,
+    citations,
+  });
+}
+
 function normalizeUrl(url: string): string {
   try {
     const parsed = new URL(url.trim());
@@ -87,10 +215,7 @@ export function auditGuideWithReport(
 
   // 1. Audit citations
   const auditedCitations: EvidenceCitation[] = guide.citations.map((citation) => {
-    const isLive = guide.generationMode === "live-researched";
-    const urlAllowed = isLive || allowedSourceUrls.length > 0
-      ? isUrlAllowed(citation.sourceUrl, allowedSourceUrls)
-      : true;
+    const urlAllowed = isUrlAllowed(citation.sourceUrl, allowedSourceUrls);
 
     const hasVerbatimQuote =
       typeof citation.verbatimQuote === "string" &&

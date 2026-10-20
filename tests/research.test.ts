@@ -2,7 +2,12 @@ import { readFile } from "node:fs/promises";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { retrieveProviderEvidence, validateExternalUrl } from "@/lib/research";
+import {
+  classifyProviderAuthority,
+  hasVerifiedProviderIdentity,
+  retrieveProviderEvidence,
+  validateExternalUrl,
+} from "@/lib/research";
 import { searchProviderEvidence } from "@/lib/research/exa-client";
 import { extractHtmlDocument, fetchHtmlDocument } from "@/lib/research/html-extractor";
 
@@ -224,6 +229,72 @@ describe("HTML extraction", () => {
 });
 
 describe("Exa discovery", () => {
+  it("accepts official evidence as identity for a provider outside the catalog", () => {
+    expect(classifyProviderAuthority(
+      "Acme Cloud",
+      "https://docs.acmecloud.com/oauth",
+      ["https://acmecloud.com"],
+    )).toBe(
+      "official-provider-docs",
+    );
+    expect(classifyProviderAuthority(
+      "https://docs.acmecloud.com/oauth",
+      "https://docs.acmecloud.com/scopes",
+    )).toBe("official-provider-docs");
+    expect(
+      hasVerifiedProviderIdentity(null, [{
+        citation: {
+          id: "acme-docs",
+          sourceUrl: "https://docs.acmecloud.com/oauth",
+          sourceTitle: "Acme Cloud OAuth",
+          authorityType: "official-provider-docs",
+          retrievedAt: "2026-10-20T00:00:00.000Z",
+          epistemicStatus: "source-supported",
+        },
+        cleanMarkdown: "OAuth setup",
+        highlights: [],
+        retrievalMethod: "exa-auto",
+      }])).toBe(true);
+  });
+
+  it("does not confuse outside-catalog with unverified identity", () => {
+    expect(classifyProviderAuthority("Acme", "https://acme.attacker.example/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(classifyProviderAuthority("Acme", "https://acme.github.io/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(classifyProviderAuthority("Acme", "https://acme.evil/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(classifyProviderAuthority("Acme Calendar", "https://calendar.com/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(hasVerifiedProviderIdentity(null, [])).toBe(false);
+  });
+
+  it("requires an outside-catalog provider to match the registrable documentation domain", () => {
+    const document = {
+      citation: {
+        id: "mastodon-docs",
+        sourceUrl: "https://docs.joinmastodon.org/methods/apps/",
+        sourceTitle: "Mastodon applications",
+        authorityType: "official-provider-docs" as const,
+        retrievedAt: "2026-10-20T00:00:00.000Z",
+        epistemicStatus: "source-supported" as const,
+      },
+      cleanMarkdown: "OAuth application registration",
+      highlights: [],
+      retrievalMethod: "direct-http-readability" as const,
+    };
+
+    expect(hasVerifiedProviderIdentity(null, [document], "Mastodon")).toBe(true);
+    expect(hasVerifiedProviderIdentity(null, [{
+      ...document,
+      citation: { ...document.citation, sourceUrl: "https://mastodon-docs.example.com/oauth" },
+    }], "Mastodon")).toBe(false);
+  });
+
   it("sends the bounded search request and returns sanitized official evidence", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       Response.json({
@@ -245,6 +316,7 @@ describe("Exa discovery", () => {
     const result = await searchProviderEvidence("Acme", ["read"], {
       apiKey: "test-key",
       fetch: fetchImpl,
+      trustedProviderUrls: ["https://acme.com"],
     });
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -287,6 +359,7 @@ describe("Exa discovery", () => {
     const result = await searchProviderEvidence("Acme", [], {
       apiKey: "test-key",
       fetch: fetchImpl,
+      trustedProviderUrls: ["https://acme.com"],
     });
 
     expect(result.documents).toHaveLength(1);
@@ -334,6 +407,7 @@ describe("Exa discovery", () => {
     const result = await searchProviderEvidence("GitHub", [], {
       apiKey: "test-key",
       fetch: fetchImpl,
+      trustedProviderUrls: ["https://github.com"],
     });
 
     expect(result.documents[0].citation.authorityType).toBe("secondary-technical");
@@ -348,8 +422,7 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "Acme",
       capabilities: ["read"],
-      forceRefresh: false,
-    });
+    }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result).toMatchObject({
       providerQuery: "Acme",
@@ -366,8 +439,7 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "Acme",
       capabilities: ["read"],
-      forceRefresh: false,
-    });
+    }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result.documents).toEqual([]);
     expect(result.degradedMode).toBe(true);
@@ -387,21 +459,78 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "https://93.184.216.34/oauth#registration",
       capabilities: [],
-      forceRefresh: false,
     });
 
     expect(result.targetUrl).toBe("https://93.184.216.34/oauth");
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].retrievalMethod).toBe("direct-http-readability");
     expect(result.documents[0].cleanMarkdown).toContain("Register the redirect URI");
+    expect(result.degradedMode).toBe(false);
     expect(vi.mocked(fetch).mock.calls[0][0].toString()).toBe("https://93.184.216.34/oauth");
+  });
+
+  it("uses an optional documentation URL directly while preserving the provider query", async () => {
+    vi.stubEnv("EXA_API_KEY", "configured-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("<html><body><article><h1>OAuth setup</h1><p>Register an app.</p></article></body></html>", {
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+    );
+
+    const result = await retrieveProviderEvidence({
+      queryOrUrl: "Acme",
+      officialDocumentationUrl: "https://93.184.216.34/oauth",
+      capabilities: ["read"],
+    });
+
+    expect(result.providerQuery).toBe("Acme");
+    expect(result.targetUrl).toBe("https://93.184.216.34/oauth");
+    expect(result.documents).toHaveLength(1);
+    expect(result.documents[0].retrievalMethod).toBe("direct-http-readability");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps usable official evidence live when another Exa result is unverified", async () => {
+    vi.stubEnv("EXA_API_KEY", "configured-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        Response.json({
+          results: [
+            {
+              title: "Acme OAuth",
+              url: "https://docs.acme.com/oauth",
+              text: "Acme OAuth documentation.",
+              highlights: ["Acme OAuth documentation."],
+            },
+            {
+              title: "Unverified notes",
+              url: "https://notes.example.com/acme",
+              text: "Third-party notes.",
+              highlights: ["Third-party notes."],
+            },
+          ],
+        }),
+      ),
+    );
+
+    const result = await retrieveProviderEvidence({
+      queryOrUrl: "Acme",
+      capabilities: ["read"],
+    }, { trustedProviderUrls: ["https://acme.com"] });
+
+    expect(result.documents).toHaveLength(2);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.degradedMode).toBe(false);
   });
 
   it("fails closed for a URL-like value rejected by the URL guard", async () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "http://localhost/oauth",
       capabilities: [],
-      forceRefresh: false,
     });
 
     expect(result.documents).toEqual([]);

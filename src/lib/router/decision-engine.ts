@@ -131,8 +131,8 @@ export function evaluateSecurityReviewTriggers(scopes: ScopeRequirement[]): {
     return {
       triggersReview: true,
       triggersAudit: true,
-      reviewType: "Restricted Scope + Mandatory Security Audit (e.g. CASA Tier AL1/AL2)",
-      estimatedTimeline: "4–8+ weeks",
+      reviewType: "Provider review and security-assessment requirements must be verified from official documentation.",
+      estimatedTimeline: "Unknown",
     };
   }
 
@@ -140,16 +140,16 @@ export function evaluateSecurityReviewTriggers(scopes: ScopeRequirement[]): {
     return {
       triggersReview: true,
       triggersAudit: false,
-      reviewType: "Standard Brand/App Provider Verification",
-      estimatedTimeline: "3–7 business days",
+      reviewType: "Provider review requirements must be verified from official documentation.",
+      estimatedTimeline: "Unknown",
     };
   }
 
   return {
     triggersReview: false,
     triggersAudit: false,
-    reviewType: "Self-serve / Organization Admin Consent",
-    estimatedTimeline: "Instant",
+    reviewType: "No review requirement is established by the available scope metadata.",
+    estimatedTimeline: "Unknown",
   };
 }
 
@@ -161,7 +161,7 @@ export function evaluateComposioAuthStrategy(params: {
   isProduction?: boolean;
   requiresCustomBranding?: boolean;
 }): {
-  recommendedAuthScheme: "MANAGED_OAUTH" | "CUSTOM_APP";
+  recommendedAuthScheme: "MANAGED_OAUTH" | "CUSTOM_APP" | "UNKNOWN";
   rationale: string;
 } {
   const { toolkit, isProduction = true, requiresCustomBranding = true } = params;
@@ -174,14 +174,6 @@ export function evaluateComposioAuthStrategy(params: {
     };
   }
 
-  if (isProduction || requiresCustomBranding) {
-    return {
-      recommendedAuthScheme: "CUSTOM_APP",
-      rationale:
-        "Production customer-facing applications require custom auth_configs for white-labeled consent screen branding, dedicated rate limits, and direct tenant credential ownership.",
-    };
-  }
-
   if (toolkit?.hasManagedOAuth) {
     return {
       recommendedAuthScheme: "MANAGED_OAUTH",
@@ -190,10 +182,16 @@ export function evaluateComposioAuthStrategy(params: {
     };
   }
 
+  if (toolkit && !toolkit.hasManagedOAuth) {
+    return {
+      recommendedAuthScheme: "UNKNOWN",
+      rationale: "Managed OAuth is not reported by catalog metadata; the required authentication path must be verified.",
+    };
+  }
+
   return {
-    recommendedAuthScheme: "CUSTOM_APP",
-    rationale:
-      "Provider does not offer managed OAuth; custom app configuration is required.",
+    recommendedAuthScheme: "UNKNOWN",
+    rationale: "The authentication strategy cannot be determined without current catalog or provider evidence.",
   };
 }
 
@@ -214,7 +212,7 @@ export function makeRoutingDecision(input: {
   let recommendedVariantId: string | undefined;
   let securityReviewRequired = false;
   let securityAuditRequired = false;
-  let estimatedReviewTimeline = "Instant";
+  let estimatedReviewTimeline = "Unknown";
 
   if (guide) {
     const variant = selectRecommendedVariant(guide, input.capabilities);

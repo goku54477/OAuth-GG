@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 
 import type { RetrievedDocument } from "./index";
 import { sanitizeUntrustedText } from "./html-extractor";
 import { validateExternalUrl } from "./url-guard";
+import type { EvidenceCitation } from "@/types/contracts";
 
 const EXA_SEARCH_URL = "https://api.exa.ai/search";
 const EXA_TIMEOUT_MS = 10_000;
@@ -21,6 +23,7 @@ const SHARED_HOST_SUFFIXES = [
 interface ExaSearchOptions {
   apiKey?: string;
   fetch?: typeof fetch;
+  trustedProviderUrls?: string[];
 }
 
 interface ExaResult {
@@ -43,26 +46,42 @@ function resultId(sourceUrl: string): string {
   return `research-${createHash("sha256").update(sourceUrl).digest("hex").slice(0, 16)}`;
 }
 
-function providerTokens(providerQuery: string): string[] {
-  return providerQuery
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((token) => token.length >= 3);
+function hostMatches(hostname: string, trustedHostname: string): boolean {
+  return hostname === trustedHostname || hostname.endsWith(`.${trustedHostname}`);
 }
 
-function looksOfficial(providerQuery: string, hostname: string): boolean {
+export function classifyProviderAuthority(
+  providerQuery: string,
+  sourceUrl: string,
+  trustedProviderUrls: string[] = [],
+): EvidenceCitation["authorityType"] {
+  const hostname = new URL(sourceUrl).hostname;
   const normalizedHostname = hostname.toLowerCase();
+  if (isIP(normalizedHostname)) return "secondary-technical";
   if (
     SHARED_HOST_SUFFIXES.some(
       (suffix) => normalizedHostname === suffix || normalizedHostname.endsWith(`.${suffix}`),
     )
   ) {
-    return false;
+    return "secondary-technical";
   }
 
-  const labels = normalizedHostname.split(".");
-  const registrableLabel = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
-  return providerTokens(providerQuery).some((token) => token === registrableLabel);
+  const trustedHostnames = trustedProviderUrls.flatMap((value) => {
+    try {
+      return [new URL(value).hostname.replace(/^www\./, "").toLowerCase()];
+    } catch {
+      return [];
+    }
+  });
+  try {
+    trustedHostnames.push(new URL(providerQuery).hostname.replace(/^www\./, "").toLowerCase());
+  } catch {
+    // A name-only query cannot establish domain ownership by itself.
+  }
+
+  return trustedHostnames.some((trustedHostname) => hostMatches(normalizedHostname, trustedHostname))
+    ? "official-provider-docs"
+    : "secondary-technical";
 }
 
 function asResults(payload: ExaResponse): ExaResult[] {
@@ -132,8 +151,14 @@ export async function searchProviderEvidence(
 
     const sourceUrl = validation.normalizedUrl;
     const hostname = new URL(sourceUrl).hostname;
-    const official = looksOfficial(providerQuery, hostname);
-    if (!official) warnings.push(`Provider ownership could not be verified for ${hostname}`);
+    const authorityType = classifyProviderAuthority(
+      providerQuery,
+      sourceUrl,
+      options.trustedProviderUrls,
+    );
+    if (authorityType !== "official-provider-docs") {
+      warnings.push(`Provider ownership could not be verified for ${hostname}`);
+    }
 
     documents.push({
       citation: {
@@ -142,7 +167,7 @@ export async function searchProviderEvidence(
         sourceTitle: sanitizeUntrustedText(
           typeof result.title === "string" && result.title ? result.title : hostname,
         ),
-        authorityType: official ? "official-provider-docs" : "secondary-technical",
+        authorityType,
         retrievedAt: new Date().toISOString(),
         verbatimQuote: highlights[0] ?? usableText.slice(0, 500),
         epistemicStatus: "source-supported",

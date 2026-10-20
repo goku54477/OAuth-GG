@@ -1,10 +1,11 @@
 import {
+  type ComposioToolkitSummary,
   LiveResearchRequestSchema,
   type EvidenceCitation,
   type LiveResearchRequest,
 } from "@/types/contracts";
 
-import { searchProviderEvidence } from "./exa-client";
+import { classifyProviderAuthority, searchProviderEvidence } from "./exa-client";
 import { fetchHtmlDocument } from "./html-extractor";
 import { validateExternalUrl } from "./url-guard";
 
@@ -23,19 +24,61 @@ export interface ResearchBundle {
   degradedMode: boolean;
 }
 
-export { validateExternalUrl } from "./url-guard";
-
-function warningMessage(prefix: string, error: unknown): string {
-  return error instanceof Error ? `${prefix}: ${error.message}` : prefix;
+interface ResearchOptions {
+  trustedProviderUrls?: string[];
 }
 
-export async function retrieveProviderEvidence(req: LiveResearchRequest): Promise<ResearchBundle> {
+export { validateExternalUrl } from "./url-guard";
+export { classifyProviderAuthority } from "./exa-client";
+
+export function hasVerifiedProviderIdentity(
+  catalogItem: ComposioToolkitSummary | null,
+  documents: RetrievedDocument[],
+  providerQuery?: string,
+): boolean {
+  if (catalogItem) return true;
+  const officialDocuments = documents.filter(
+    (document) => document.citation.authorityType === "official-provider-docs",
+  );
+  if (!providerQuery) return officialDocuments.length > 0;
+
+  const query = providerQuery.trim().toLowerCase();
+  try {
+    const queryHost = new URL(query).hostname.replace(/^www\./, "");
+    return officialDocuments.some((document) => {
+      const sourceHost = new URL(document.citation.sourceUrl).hostname.replace(/^www\./, "");
+      return sourceHost === queryHost
+        || sourceHost.endsWith(`.${queryHost}`)
+        || queryHost.endsWith(`.${sourceHost}`);
+    });
+  } catch {
+    const ignored = new Set(["api", "app", "developer", "developers", "docs", "documentation", "oauth", "the"]);
+    const tokens = query.split(/[^a-z0-9]+/).filter((token) => token.length >= 3 && !ignored.has(token));
+    const providerLabel = tokens.join("");
+    return tokens.length > 0 && officialDocuments.some((document) => {
+      const labels = new URL(document.citation.sourceUrl).hostname.replace(/^www\./, "").split(".");
+      const registrableLabel = (labels.at(-2) ?? labels[0]).replace(/[^a-z0-9]/g, "");
+      return registrableLabel === providerLabel || registrableLabel === `join${providerLabel}`;
+    });
+  }
+}
+
+function warningMessage(prefix: string): string {
+  return prefix;
+}
+
+export async function retrieveProviderEvidence(
+  req: LiveResearchRequest,
+  options: ResearchOptions = {},
+): Promise<ResearchBundle> {
   const parsed = LiveResearchRequestSchema.parse(req);
   const providerQuery = parsed.queryOrUrl.trim();
-  const validation = validateExternalUrl(providerQuery);
+  const directDocumentationUrl = parsed.officialDocumentationUrl ?? providerQuery;
+  const validation = validateExternalUrl(directDocumentationUrl);
   const looksLikeUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(providerQuery);
+  const hasDirectDocumentationUrl = Boolean(parsed.officialDocumentationUrl) || looksLikeUrl;
 
-  if (looksLikeUrl && (!validation.valid || !validation.normalizedUrl)) {
+  if (hasDirectDocumentationUrl && (!validation.valid || !validation.normalizedUrl)) {
     return {
       providerQuery,
       documents: [],
@@ -44,22 +87,30 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
     };
   }
 
-  if (validation.valid && validation.normalizedUrl) {
+  if (hasDirectDocumentationUrl && validation.valid && validation.normalizedUrl) {
     try {
       const document = await fetchHtmlDocument(validation.normalizedUrl);
+      document.citation.authorityType = classifyProviderAuthority(
+        providerQuery,
+        document.citation.sourceUrl,
+        [
+          ...(options.trustedProviderUrls ?? []),
+          ...(parsed.officialDocumentationUrl ? [parsed.officialDocumentationUrl] : []),
+        ],
+      );
       return {
         providerQuery,
         targetUrl: validation.normalizedUrl,
         documents: [document],
-        warnings: ["Provider ownership could not be verified for the supplied URL"],
-        degradedMode: true,
+        warnings: [],
+        degradedMode: false,
       };
-    } catch (error) {
+    } catch {
       return {
         providerQuery,
         targetUrl: validation.normalizedUrl,
         documents: [],
-        warnings: [warningMessage("Direct documentation fetch failed", error)],
+        warnings: [warningMessage("Direct documentation fetch failed")],
         degradedMode: true,
       };
     }
@@ -75,18 +126,20 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
   }
 
   try {
-    const result = await searchProviderEvidence(providerQuery, parsed.capabilities);
+    const result = await searchProviderEvidence(providerQuery, parsed.capabilities, {
+      trustedProviderUrls: options.trustedProviderUrls,
+    });
     return {
       providerQuery,
       documents: result.documents,
       warnings: result.warnings,
-      degradedMode: result.documents.length === 0 || result.warnings.length > 0,
+      degradedMode: result.documents.length === 0,
     };
-  } catch (error) {
+  } catch {
     return {
       providerQuery,
       documents: [],
-      warnings: [warningMessage("Exa provider discovery failed", error)],
+      warnings: [warningMessage("Exa provider discovery failed")],
       degradedMode: true,
     };
   }

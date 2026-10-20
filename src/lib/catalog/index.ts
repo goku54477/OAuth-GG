@@ -14,6 +14,13 @@ import {
 const snapshot = ComposioToolkitSummarySchema.array().parse(snapshotJson);
 const bySlug = new Map(snapshot.map((toolkit) => [toolkit.slug, toolkit]));
 
+const providerDomainAliases = new Map([
+  ["github.com", "github"],
+  ["slack.com", "slack"],
+  ["google.com", "gmail"],
+  ["gmail.com", "gmail"],
+]);
+
 function cloneToolkit(toolkit: ComposioToolkitSummary): ComposioToolkitSummary {
   return {
     ...toolkit,
@@ -52,6 +59,40 @@ export async function getToolkitBySlug(
 ): Promise<ComposioToolkitSummary | null> {
   const toolkit = bySlug.get(slug.trim().toLowerCase());
   return toolkit ? cloneToolkit(toolkit) : null;
+}
+
+function isHostOrSubdomain(hostname: string, domain: string): boolean {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+/** Resolve an exact catalog slug from a provider name or documentation URL. */
+export async function getToolkitByQuery(queryOrUrl: string): Promise<ComposioToolkitSummary | null> {
+  const query = queryOrUrl.trim().toLowerCase();
+  const direct = bySlug.get(query);
+  if (direct) return cloneToolkit(direct);
+
+  try {
+    const hostname = new URL(query).hostname.replace(/^www\./, "");
+    for (const [domain, slug] of providerDomainAliases) {
+      if (isHostOrSubdomain(hostname, domain) && bySlug.has(slug)) {
+        return cloneToolkit(bySlug.get(slug)!);
+      }
+    }
+
+    for (const toolkit of snapshot) {
+      if (!toolkit.appUrl) continue;
+      try {
+        const appHostname = new URL(toolkit.appUrl).hostname.replace(/^www\./, "");
+        if (isHostOrSubdomain(hostname, appHostname)) return cloneToolkit(toolkit);
+      } catch {
+        // Ignore malformed catalog URLs.
+      }
+    }
+  } catch {
+    // Non-URL queries are only accepted as exact catalog slugs.
+  }
+
+  return null;
 }
 
 export async function fetchLiveToolkitMetadata(slug: string): Promise<{

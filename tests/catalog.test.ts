@@ -5,6 +5,7 @@ import {
   fetchLiveToolkitMetadata,
   getCatalogStats,
   getCatalogToolkits,
+  getToolkitByQuery,
   getToolkitBySlug,
 } from "@/lib/catalog";
 import {
@@ -71,6 +72,17 @@ describe("catalog snapshot", () => {
     await expect(getToolkitBySlug("github")).resolves.not.toMatchObject({
       categories: expect.arrayContaining(["Injected"]),
     });
+  });
+
+  it("resolves a catalog toolkit from a provider documentation URL", async () => {
+    await expect(getToolkitByQuery("https://docs.stripe.com/connect/oauth-reference")).resolves.toMatchObject({
+      slug: "stripe",
+    });
+    await expect(getToolkitByQuery("https://docs.not-a-catalog-provider.invalid/oauth")).resolves.toBeNull();
+    await expect(getToolkitByQuery("https://github.com.attacker.example/oauth")).resolves.toBeNull();
+    await expect(getToolkitByQuery("https://notgithub.com/oauth")).resolves.toBeNull();
+    await expect(getToolkitByQuery("https://github.example/oauth")).resolves.toBeNull();
+    await expect(getToolkitByQuery("https://slack.com.attacker.example/oauth")).resolves.toBeNull();
   });
 });
 

@@ -7,10 +7,47 @@ import {
   ProviderGuideSchema,
 } from "@/types/contracts";
 
+const GeneratedGuideDraftSchema = ProviderGuideSchema.omit({
+  slug: true,
+  providerName: true,
+  toolkitSlug: true,
+  generatedAt: true,
+  investigationContext: true,
+  generationMode: true,
+  completenessStatus: true,
+  citations: true,
+  composioIntegration: true,
+}).extend({
+  composioIntegration: ProviderGuideSchema.shape.composioIntegration.omit({
+    managedOAuthAvailable: true,
+    epistemicStatus: true,
+  }),
+});
+
+export interface GuideGenerationDiagnostics {
+  providerMatched: boolean;
+  researchDocumentCount: number;
+  officialDocumentCount: number;
+  researchDegraded: boolean;
+  researchWarningCount: number;
+  modelAttempted: boolean;
+  generationOutcome:
+    | "missing-api-key"
+    | "provider-identity-unverified"
+    | "no-official-evidence"
+    | "golden-guide"
+    | "model-success"
+    | "model-http-error"
+    | "model-output-invalid";
+  failureCategory?: string;
+}
+
 export interface GenerateGuideInput {
   queryOrUrl: string;
   capabilities?: string[];
   catalogItem?: ComposioToolkitSummary | null;
+  catalogEpistemicStatus?: "observed" | "source-supported";
+  providerIdentityVerified?: boolean;
   researchBundle?: {
     providerQuery: string;
     targetUrl?: string;
@@ -36,8 +73,28 @@ function slugify(text: string): string {
 
 function deriveProviderName(queryOrUrl: string, catalogItem?: ComposioToolkitSummary | null): string {
   if (catalogItem?.name) return catalogItem.name;
-  const clean = queryOrUrl.replace(/https?:\/\//g, "").split("/")[0].split(".")[0];
+  let clean = queryOrUrl.trim();
+  try {
+    const labels = new URL(queryOrUrl).hostname.replace(/^www\./, "").split(".");
+    clean = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
+  } catch {
+    // Provider name already comes from user query.
+  }
   return clean.charAt(0).toUpperCase() + clean.slice(1);
+}
+
+function generationFailureCategory(error: unknown): string {
+  const candidate = error as {
+    name?: unknown;
+    finishReason?: unknown;
+    statusCode?: unknown;
+    cause?: { statusCode?: unknown };
+  } | null;
+  if (candidate?.name === "AI_NoObjectGeneratedError" && candidate.finishReason === "length") {
+    return "model-output-truncated";
+  }
+  const statusCode = candidate?.statusCode ?? candidate?.cause?.statusCode;
+  return typeof statusCode === "number" ? `http-${statusCode}` : "invalid-or-incomplete-model-output";
 }
 
 /**
@@ -45,140 +102,84 @@ function deriveProviderName(queryOrUrl: string, catalogItem?: ComposioToolkitSum
  * or when research documents lack official provider documentation.
  */
 export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGuide {
-  const { queryOrUrl, catalogItem, researchBundle, capabilities = ["read", "write"] } = input;
+  const { queryOrUrl, catalogItem, researchBundle } = input;
   const providerName = deriveProviderName(queryOrUrl, catalogItem);
-  const slug = catalogItem?.slug || slugify(queryOrUrl) || "unknown-provider";
+  const slug = catalogItem?.slug || slugify(providerName) || "unknown-provider";
   const now = new Date().toISOString();
 
-  const citations: EvidenceCitation[] = (researchBundle?.documents || []).map((d) => d.citation);
+  const citations: EvidenceCitation[] = (
+    catalogItem || input.providerIdentityVerified ? researchBundle?.documents || [] : []
+  )
+    .filter((document) => document.citation.authorityType === "official-provider-docs")
+    .map((document) => document.citation);
 
   const fallbackGuide: ProviderGuide = {
     slug,
     providerName,
     toolkitSlug: catalogItem?.slug,
     title: `${providerName} Integration & OAuth Guide (Partial Reference)`,
-    subtitle:
-      "Automated baseline fallback guide generated without active LLM provider key or verified official documentation",
+    subtitle: citations.length > 0
+      ? "Official provider evidence was collected, but a complete structured guide could not be generated."
+      : "Provider-specific OAuth configuration could not be verified from trusted evidence.",
     generatedAt: now,
     generationMode: "partial-fallback",
     completenessStatus: "partial",
     composioIntegration: {
       managedOAuthAvailable: catalogItem?.hasManagedOAuth ?? false,
       managedVsCustomVerdict: catalogItem?.hasManagedOAuth
-        ? "Composio Managed OAuth is available for rapid prototyping, but custom auth_configs should be evaluated for enterprise production."
-        : "Composio managed OAuth is not available or unverified for this provider. Custom OAuth app credentials must be configured.",
-      customAuthConfigSnippet: JSON.stringify(
-        {
-          auth_mode: "OAUTH2",
-          client_id: `{{${slug.toUpperCase().replace(/-/g, "_")}_CLIENT_ID}}`,
-          client_secret: `{{${slug.toUpperCase().replace(/-/g, "_")}_CLIENT_SECRET}}`,
-          authorization_url: "https://example.com/oauth/authorize",
-          token_url: "https://example.com/oauth/token",
-          redirect_uri: `https://backend.composio.dev/api/v1/auth-apps/addRepo/${slug}`,
-        },
-        null,
-        2
-      ),
-      composioRedirectUriHint: `https://backend.composio.dev/api/v1/auth-apps/addRepo/${slug}`,
-      epistemicStatus: catalogItem ? "observed" : "unknown",
+        ? "Managed OAuth availability is reported by current Composio catalog metadata."
+        : "Composio managed OAuth availability is unknown because this provider is not matched to catalog metadata.",
+      customAuthConfigSnippet: "",
+      composioRedirectUriHint: "",
+      epistemicStatus: catalogItem
+        ? input.catalogEpistemicStatus ?? "source-supported"
+        : "unknown",
       citationIds: citations.map((c) => c.id),
     },
     variants: [
       {
         variantId: `${slug}-baseline-oauth`,
-        title: `${providerName} Standard OAuth Integration`,
-        summary: `Baseline OAuth 2.0 configuration for ${providerName}. Exact permission tiers, sensitive classifications, and security reviews require manual verification against official vendor docs.`,
-        recommendedAppType: "OAuth 2.0 Web Application",
-        scopes: capabilities.map((cap) => ({
-          scope: cap,
-          displayName: `${cap.charAt(0).toUpperCase() + cap.slice(1)} Scope`,
-          classification: "unknown" as const,
-          requiredForCapability: `Required for ${cap} operations`,
-          triggersExternalReview: false,
-          triggersSecurityAudit: false,
-          epistemicStatus: "unknown" as const,
-          citationIds: [],
-        })),
+        title: "Partial evidence record",
+        summary: "No provider-specific OAuth application type, scope names, or configuration values are presented without trusted supporting evidence.",
+        recommendedAppType: "Unknown",
+        scopes: [],
         approvalGateSummary:
           "Provider approval requirements and external review gates are currently unknown and unverified.",
         estimatedReviewTimeline: "Unknown",
         securityAuditRequired: "Unknown",
-        pros: [
-          "Establishes initial baseline integration structure",
-          "Includes standard Composio redirect URI pattern",
-        ],
-        cons: [
-          "Scope sensitivity tiers and third-party security audit triggers require manual review",
-          "Verification turnaround timeline is unverified",
-        ],
+        pros: [],
+        cons: [],
       },
     ],
-    registrationSteps: [
-      {
-        stepNumber: 1,
-        title: `Create ${providerName} Developer Project`,
-        consolePath: `${providerName} Developer Portal > Applications`,
-        instructions:
-          "Navigate to the developer portal for this provider, register your developer account, and create a new OAuth 2.0 application or client credential.",
-        criticalConfigValues: [
-          {
-            label: "Callback URL",
-            value: `https://backend.composio.dev/api/v1/auth-apps/addRepo/${slug}`,
-          },
-        ],
-        epistemicStatus: "unknown",
-        citationIds: [],
-      },
-      {
-        stepNumber: 2,
-        title: "Record Client Credentials in Composio",
-        consolePath: "Composio Settings > Auth Configs",
-        instructions:
-          "Save the generated Client ID and Client Secret into your Composio app configuration or environment variables.",
-        criticalConfigValues: [
-          {
-            label: "Client ID",
-            value: "Recorded from provider console",
-          },
-          {
-            label: "Client Secret",
-            value: "Recorded from provider console",
-          },
-        ],
-        epistemicStatus: "unknown",
-        citationIds: [],
-      },
-    ],
+    registrationSteps: [],
     testingAndSandboxRules: [
       {
-        claim:
-          "Sandbox quotas, test user limits, and token expiration defaults are unverified for this provider.",
+        claim: "No provider-specific testing or sandbox rules were verified.",
         epistemicStatus: "unknown",
         citationIds: [],
-        notes: "Consult the provider developer documentation for testing constraints.",
+        notes: "Consult official provider documentation before implementation.",
       },
     ],
     distributionAndReviewChecklist: [
       {
-        claim:
-          "Production app verification and security assessment prerequisites must be validated before exposing app to external users.",
+        claim: "No provider-specific production review requirements were verified.",
         epistemicStatus: "unknown",
         citationIds: [],
       },
     ],
     practicalObservations: [
       {
-        claim:
-          "Live AI synthesis was skipped due to missing API key or absence of official provider documentation in the research bundle.",
+        claim: "This partial record intentionally omits unverified OAuth configuration and permission claims.",
         epistemicStatus: "unknown",
         citationIds: [],
       },
     ],
     explicitUnknowns: [
-      "Exact provider sensitive and restricted scope definitions",
-      "Mandatory third-party security audits (e.g. CASA, SOC 2, or vendor assessments)",
-      "Developer portal sandbox user quotas and refresh token lifespans",
-      "Production verification review timeline and requirements",
+      ...(!catalogItem && !input.providerIdentityVerified ? ["Provider identity"] : []),
+      ...(citations.length === 0 ? ["Official OAuth documentation"] : []),
+      "OAuth application type, callback URL, and client-credential requirements",
+      "Permission scopes and sensitivity classifications",
+      "Testing, review, and security-audit requirements",
     ],
     citations,
   };
@@ -188,19 +189,49 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
 
 /**
  * Generates a structured ProviderGuide using Vercel AI SDK when OPENAI_API_KEY is present
- * and official documentation exists in the research bundle; otherwise falls back to a deterministic partial guide.
+ * and verified official documentation exists in the research bundle; otherwise falls back to an evidence-limited guide.
  */
 export async function generateStructuredGuide(input: GenerateGuideInput): Promise<ProviderGuide> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const docs = input.researchBundle?.documents || [];
-  const hasOfficialDocs = docs.some(
-    (d) => d.citation.authorityType === "official-provider-docs"
-  );
-  const isDegraded = input.researchBundle?.degradedMode ?? false;
+  return (await generateStructuredGuideWithDiagnostics(input)).guide;
+}
 
-  // If no OpenAI key or no official docs or degraded research bundle, return truthful fallback
-  if (!apiKey || !hasOfficialDocs || isDegraded) {
-    return buildPartialFallbackGuide(input);
+export async function generateStructuredGuideWithDiagnostics(
+  input: GenerateGuideInput,
+): Promise<{ guide: ProviderGuide; diagnostics: GuideGenerationDiagnostics }> {
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const allDocuments = input.researchBundle?.documents || [];
+  const docs = allDocuments.filter(
+    (document) => document.citation.authorityType === "official-provider-docs",
+  );
+  const baseDiagnostics = {
+    providerMatched: Boolean(input.catalogItem),
+    researchDocumentCount: allDocuments.length,
+    officialDocumentCount: docs.length,
+    researchDegraded: input.researchBundle?.degradedMode ?? true,
+    researchWarningCount: input.researchBundle?.warnings.length ?? 0,
+  };
+
+  if (!apiKey) {
+    return {
+      guide: buildPartialFallbackGuide(input),
+      diagnostics: { ...baseDiagnostics, modelAttempted: false, generationOutcome: "missing-api-key" },
+    };
+  }
+  if (!input.catalogItem && !input.providerIdentityVerified) {
+    return {
+      guide: buildPartialFallbackGuide(input),
+      diagnostics: {
+        ...baseDiagnostics,
+        modelAttempted: false,
+        generationOutcome: "provider-identity-unverified",
+      },
+    };
+  }
+  if (docs.length === 0) {
+    return {
+      guide: buildPartialFallbackGuide(input),
+      diagnostics: { ...baseDiagnostics, modelAttempted: false, generationOutcome: "no-official-evidence" },
+    };
   }
 
   try {
@@ -216,6 +247,7 @@ Research Documents:
 ${docs
   .map(
     (d, i) => `--- DOCUMENT ${i + 1} (${d.citation.sourceUrl}) [${d.citation.authorityType}] ---
+Citation ID: ${d.citation.id}
 Title: ${d.citation.sourceTitle}
 Content:
 ${d.cleanMarkdown.slice(0, 3000)}
@@ -226,29 +258,62 @@ ${d.highlights.join("\n")}
   .join("\n\n")}
 
 CRITICAL SECURITY REQUIREMENTS:
-1. Always contrast at least 2 variants: a recommended least-privilege variant (Variant A) and a broader/comparison variant (Variant B).
-2. For every scope, correctly classify as non-sensitive, sensitive, restricted, granular-bot, coarse-repo, or unknown.
-3. Identify external review gates and whether third-party security audits (e.g., CASA Tier AL1/AL2) are triggered.
-4. Provide concrete step-by-step console instructions with criticalConfigValues.
-5. Provide explicit citations referencing the provided document URLs with verbatim quotes.
+0. Keep every field concise so complete valid JSON fits within the output limit.
+1. Include a permission name only when a cited official passage explicitly names it. Do not claim it covers a requested operation unless that mapping is directly documented.
+2. Do not infer sensitivity classifications, review or audit requirements, timelines, costs, application-type recommendations, custom credentials, redirect URIs, or console paths. Leave those fields Unknown or empty when sources do not establish them.
+3. For registration guidance, prefer a directly cited official documentation URL over an inferred console path.
+4. Reference only supplied citation IDs. Do not create citations or provider identity fields.
 `;
 
     const result = await generateObject({
-      // GPT-5 defaults to strict structured output in this SDK. This schema has optional fields,
-      // so request OpenAI JSON mode and validate the parsed result locally instead.
-      model: openai("gpt-5-nano", { structuredOutputs: false }),
-      schema: ProviderGuideSchema,
+      model: openai("gpt-5-nano", {
+        structuredOutputs: false,
+        reasoningEffort: "low",
+      }),
+      schema: GeneratedGuideDraftSchema,
       mode: "json",
+      maxTokens: 8192,
       prompt,
     });
 
-    return ProviderGuideSchema.parse(result.object);
+    const draft = GeneratedGuideDraftSchema.parse(result.object);
+    const providerName = deriveProviderName(input.queryOrUrl, input.catalogItem);
+    const guide = ProviderGuideSchema.parse({
+      ...draft,
+      slug: input.catalogItem?.slug ?? (slugify(providerName) || "unknown-provider"),
+      providerName,
+      toolkitSlug: input.catalogItem?.slug,
+      generatedAt: new Date().toISOString(),
+      generationMode: "live-researched",
+      completenessStatus: "complete",
+      composioIntegration: {
+        ...draft.composioIntegration,
+        managedOAuthAvailable: input.catalogItem?.hasManagedOAuth ?? false,
+        epistemicStatus: input.catalogItem
+          ? input.catalogEpistemicStatus ?? "source-supported"
+          : "unknown",
+      },
+      citations: docs.map((document) => document.citation),
+    });
+    return {
+      guide,
+      diagnostics: { ...baseDiagnostics, modelAttempted: true, generationOutcome: "model-success" },
+    };
   } catch (error) {
-    // If AI generation fails for any reason, gracefully fall back to the safe partial guide
+    const category = generationFailureCategory(error);
+    console.error("[guide-generation] failed", { category });
     const fallback = buildPartialFallbackGuide(input);
     fallback.explicitUnknowns.push(
       "Live LLM guide generation failed. Retry later or use verified provider documentation."
     );
-    return fallback;
+    return {
+      guide: fallback,
+      diagnostics: {
+        ...baseDiagnostics,
+        modelAttempted: true,
+        generationOutcome: category.startsWith("http-") ? "model-http-error" : "model-output-invalid",
+        failureCategory: category,
+      },
+    };
   }
 }

@@ -1,8 +1,26 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import { saveGuide, getGuideBySlug, listSavedGuides, GMAIL_GUIDE_SEED } from "@/lib/db";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
+import { auditPersistedGuides, saveGuide, getGuideBySlug, listSavedGuides } from "@/lib/db";
 import type { ProviderGuide } from "@/types/contracts";
 
 describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
+  const testDir = path.join(os.tmpdir(), `oauth-workbench-db-${process.pid}`);
+  const fallbackPath = path.join(testDir, "guides-fallback.json");
+
+  beforeAll(() => {
+    fs.mkdirSync(testDir, { recursive: true });
+    process.env.GUIDES_FALLBACK_FILE = fallbackPath;
+    process.env.TURSO_DATABASE_URL = "file::memory:";
+  });
+
+  afterAll(() => {
+    fs.rmSync(testDir, { recursive: true, force: true });
+    delete process.env.GUIDES_FALLBACK_FILE;
+    delete process.env.TURSO_DATABASE_URL;
+  });
   const testGuide: ProviderGuide = {
     slug: "linear-oauth-sync-test",
     providerName: "Linear",
@@ -12,6 +30,12 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     generatedAt: "2026-10-20T12:00:00.000Z",
     generationMode: "live-researched",
     completenessStatus: "complete",
+    investigationContext: {
+      query: "Linear",
+      requestedCapabilities: ["read", "write"],
+      sourceMode: "official-documentation",
+      officialDocumentationUrl: "https://developers.linear.app/docs/oauth/authentication",
+    },
     composioIntegration: {
       managedOAuthAvailable: true,
       managedVsCustomVerdict: "Use managed for prototyping, BYO for production customer workspace auth.",
@@ -119,33 +143,24 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     ],
   };
 
-  it("should pre-seed and retrieve golden guides immediately", async () => {
-    const gmailGuide = await getGuideBySlug("gmail-send-vs-modify");
-    expect(gmailGuide).not.toBeNull();
-    expect(gmailGuide?.slug).toBe("gmail-send-vs-modify");
-    expect(gmailGuide?.providerName).toBe("Google / Gmail");
-    expect(gmailGuide?.variants.length).toBeGreaterThanOrEqual(1);
-
-    const githubGuide = await getGuideBySlug("github-public-issues");
-    expect(githubGuide).not.toBeNull();
-    expect(githubGuide?.slug).toBe("github-public-issues");
-
-    const slackGuide = await getGuideBySlug("slack-channel-bot");
-    expect(slackGuide).not.toBeNull();
-    expect(slackGuide?.slug).toBe("slack-channel-bot");
+  it("does not seed duplicated reference guides into persistence", async () => {
+    expect(await getGuideBySlug("gmail-send-vs-modify")).toBeNull();
   });
 
   it("should save a new guide and retrieve it by slug", async () => {
     await saveGuide(testGuide);
 
+    expect(fs.existsSync(fallbackPath)).toBe(true);
+
     const retrieved = await getGuideBySlug("linear-oauth-sync-test");
     expect(retrieved).not.toBeNull();
     expect(retrieved?.slug).toBe(testGuide.slug);
-    expect(retrieved?.title).toBe(testGuide.title);
+    expect(retrieved?.title).toBe("Linear Integration & OAuth Guide (Partial Reference)");
     expect(retrieved?.providerName).toBe("Linear");
     expect(retrieved?.variants.length).toBe(2);
-    expect(retrieved?.variants[0].scopes[0].scope).toBe("read");
+    expect(retrieved?.variants[0].scopes).toEqual([]);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
+    expect(retrieved?.investigationContext).toEqual(testGuide.investigationContext);
   });
 
   it("should return null for unknown slugs", async () => {
@@ -153,21 +168,66 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(nonexistent).toBeNull();
   });
 
-  it("should list saved guides including golden and newly saved guides", async () => {
+  it("normalizes partial fallback records before persistence", async () => {
+    const partialGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "miro-partial-roundtrip-test",
+      generationMode: "partial-fallback",
+      completenessStatus: "partial",
+      composioIntegration: {
+        ...testGuide.composioIntegration,
+        managedOAuthAvailable: true,
+        customAuthConfigSnippet: "",
+        composioRedirectUriHint: "",
+      },
+      variants: [{ ...testGuide.variants[0], scopes: [] }],
+      registrationSteps: [],
+    };
+    const saved = await saveGuide(partialGuide);
+
+    const retrieved = await getGuideBySlug(partialGuide.slug);
+    expect(saved).toEqual(retrieved);
+    expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
+    expect(retrieved?.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(retrieved?.registrationSteps[0]?.consolePath).toBe(partialGuide.citations[0].sourceUrl);
+    expect(retrieved?.distributionAndReviewChecklist).toEqual([]);
+    expect(retrieved?.explicitUnknowns).toContain("Requested capability coverage");
+  });
+
+  it("normalizes unsafe live-generation configuration before persistence", async () => {
+    const unsafeGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "unsafe-live-guide",
+      composioIntegration: {
+        ...testGuide.composioIntegration,
+        customAuthConfigSnippet: "client_secret=not-a-snippet",
+        composioRedirectUriHint: "https://composio.example.com/callback",
+      },
+    };
+
+    const saved = await saveGuide(unsafeGuide);
+    const retrieved = await getGuideBySlug(unsafeGuide.slug);
+
+    expect(saved.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(saved.composioIntegration.composioRedirectUriHint).toBe("");
+    expect(retrieved).toEqual(saved);
+  });
+
+  it("lists only persisted guides; reference guides are resolved separately", async () => {
     const list = await listSavedGuides();
     expect(Array.isArray(list)).toBe(true);
-    expect(list.length).toBeGreaterThanOrEqual(3);
+    expect(list.map((item) => item.slug)).toContain(testGuide.slug);
+    expect(list.map((item) => item.slug)).not.toContain("gmail-send-vs-modify");
+  });
 
-    const slugs = list.map((item) => item.slug);
-    expect(slugs).toContain("gmail-send-vs-modify");
-    expect(slugs).toContain("github-public-issues");
-    expect(slugs).toContain("slack-channel-bot");
+  it("audits persisted records idempotently", async () => {
+    const firstCount = await auditPersistedGuides();
+    const first = await getGuideBySlug("unsafe-live-guide");
+    const secondCount = await auditPersistedGuides();
+    const second = await getGuideBySlug("unsafe-live-guide");
 
-    const gmailSummary = list.find((item) => item.slug === "gmail-send-vs-modify");
-    expect(gmailSummary).toBeDefined();
-    expect(gmailSummary?.providerName).toBe("Google / Gmail");
-    expect(gmailSummary?.generationMode).toBe("golden-verified");
-    expect(gmailSummary?.completenessStatus).toBe("complete");
-    expect(gmailSummary?.generatedAt).toBeDefined();
+    expect(firstCount).toBeGreaterThan(0);
+    expect(secondCount).toBe(firstCount);
+    expect(second).toEqual(first);
   });
 });
