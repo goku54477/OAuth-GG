@@ -58,6 +58,7 @@ describe("live guide generation", () => {
     await generateStructuredGuide({
       queryOrUrl: "Stripe",
       catalogItem: stripeCatalog,
+      catalogEpistemicStatus: "source-supported",
       researchBundle: stripeResearch,
     });
 
@@ -82,6 +83,7 @@ describe("live guide generation", () => {
     expect(result.guide.providerName).toBe("Stripe");
     expect(result.guide.toolkitSlug).toBe("stripe");
     expect(result.guide.composioIntegration.managedOAuthAvailable).toBe(true);
+    expect(result.guide.composioIntegration.epistemicStatus).toBe("source-supported");
     expect(result.guide.citations.map((citation) => citation.id)).toEqual(["stripe-docs"]);
   });
 
@@ -137,6 +139,10 @@ describe("live guide generation", () => {
       modelAttempted: true,
       generationOutcome: "model-output-invalid",
     });
+    expect(invalid.guide.citations).toHaveLength(1);
+    expect(invalid.guide.explicitUnknowns).not.toContain(
+      "Provider identity and official OAuth documentation",
+    );
     expect(JSON.stringify(invalid)).not.toContain("test-key");
   });
 });

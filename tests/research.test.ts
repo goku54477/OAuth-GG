@@ -230,9 +230,17 @@ describe("HTML extraction", () => {
 
 describe("Exa discovery", () => {
   it("accepts official evidence as identity for a provider outside the catalog", () => {
-    expect(classifyProviderAuthority("Acme Cloud", "https://docs.acmecloud.com/oauth")).toBe(
+    expect(classifyProviderAuthority(
+      "Acme Cloud",
+      "https://docs.acmecloud.com/oauth",
+      ["https://acmecloud.com"],
+    )).toBe(
       "official-provider-docs",
     );
+    expect(classifyProviderAuthority(
+      "https://docs.acmecloud.com/oauth",
+      "https://docs.acmecloud.com/scopes",
+    )).toBe("official-provider-docs");
     expect(
       hasVerifiedProviderIdentity(null, [{
         citation: {
@@ -254,6 +262,12 @@ describe("Exa discovery", () => {
       "secondary-technical",
     );
     expect(classifyProviderAuthority("Acme", "https://acme.github.io/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(classifyProviderAuthority("Acme", "https://acme.evil/oauth")).toBe(
+      "secondary-technical",
+    );
+    expect(classifyProviderAuthority("Acme Calendar", "https://calendar.com/oauth")).toBe(
       "secondary-technical",
     );
     expect(hasVerifiedProviderIdentity(null, [])).toBe(false);
@@ -280,6 +294,7 @@ describe("Exa discovery", () => {
     const result = await searchProviderEvidence("Acme", ["read"], {
       apiKey: "test-key",
       fetch: fetchImpl,
+      trustedProviderUrls: ["https://acme.com"],
     });
 
     expect(fetchImpl).toHaveBeenCalledTimes(1);
@@ -322,6 +337,7 @@ describe("Exa discovery", () => {
     const result = await searchProviderEvidence("Acme", [], {
       apiKey: "test-key",
       fetch: fetchImpl,
+      trustedProviderUrls: ["https://acme.com"],
     });
 
     expect(result.documents).toHaveLength(1);
@@ -369,6 +385,7 @@ describe("Exa discovery", () => {
     const result = await searchProviderEvidence("GitHub", [], {
       apiKey: "test-key",
       fetch: fetchImpl,
+      trustedProviderUrls: ["https://github.com"],
     });
 
     expect(result.documents[0].citation.authorityType).toBe("secondary-technical");
@@ -384,7 +401,7 @@ describe("retrieveProviderEvidence", () => {
       queryOrUrl: "Acme",
       capabilities: ["read"],
       forceRefresh: false,
-    });
+    }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result).toMatchObject({
       providerQuery: "Acme",
@@ -402,7 +419,7 @@ describe("retrieveProviderEvidence", () => {
       queryOrUrl: "Acme",
       capabilities: ["read"],
       forceRefresh: false,
-    });
+    }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result.documents).toEqual([]);
     expect(result.degradedMode).toBe(true);
@@ -461,7 +478,7 @@ describe("retrieveProviderEvidence", () => {
       queryOrUrl: "Acme",
       capabilities: ["read"],
       forceRefresh: false,
-    });
+    }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result.documents).toHaveLength(2);
     expect(result.warnings).toHaveLength(1);

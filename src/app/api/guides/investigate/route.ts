@@ -13,7 +13,9 @@ export async function POST(request: Request) {
     const { queryOrUrl, capabilities } = parsed.data;
     const catalogItem = await getToolkitByQuery(queryOrUrl);
     const liveMetadata = catalogItem ? await fetchLiveToolkitMetadata(catalogItem.slug) : null;
-    const researchBundle = await retrieveProviderEvidence(parsed.data);
+    const researchBundle = await retrieveProviderEvidence(parsed.data, {
+      trustedProviderUrls: catalogItem?.appUrl ? [catalogItem.appUrl] : [],
+    });
     const resolvedCatalogItem = liveMetadata?.summary ?? catalogItem;
     const providerIdentityVerified = hasVerifiedProviderIdentity(
       resolvedCatalogItem,
@@ -30,6 +32,7 @@ export async function POST(request: Request) {
       queryOrUrl,
       capabilities,
       catalogItem: resolvedCatalogItem,
+      catalogEpistemicStatus: liveMetadata?.epistemicStatus ?? (catalogItem ? "source-supported" : undefined),
       providerIdentityVerified,
       researchBundle,
     });

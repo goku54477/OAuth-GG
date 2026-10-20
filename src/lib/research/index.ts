@@ -24,6 +24,10 @@ export interface ResearchBundle {
   degradedMode: boolean;
 }
 
+interface ResearchOptions {
+  trustedProviderUrls?: string[];
+}
+
 export { validateExternalUrl } from "./url-guard";
 export { classifyProviderAuthority } from "./exa-client";
 
@@ -40,7 +44,10 @@ function warningMessage(prefix: string): string {
   return prefix;
 }
 
-export async function retrieveProviderEvidence(req: LiveResearchRequest): Promise<ResearchBundle> {
+export async function retrieveProviderEvidence(
+  req: LiveResearchRequest,
+  options: ResearchOptions = {},
+): Promise<ResearchBundle> {
   const parsed = LiveResearchRequestSchema.parse(req);
   const providerQuery = parsed.queryOrUrl.trim();
   const validation = validateExternalUrl(providerQuery);
@@ -58,7 +65,11 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
   if (validation.valid && validation.normalizedUrl) {
     try {
       const document = await fetchHtmlDocument(validation.normalizedUrl);
-      document.citation.authorityType = classifyProviderAuthority(providerQuery, document.citation.sourceUrl);
+      document.citation.authorityType = classifyProviderAuthority(
+        providerQuery,
+        document.citation.sourceUrl,
+        options.trustedProviderUrls,
+      );
       return {
         providerQuery,
         targetUrl: validation.normalizedUrl,
@@ -87,7 +98,9 @@ export async function retrieveProviderEvidence(req: LiveResearchRequest): Promis
   }
 
   try {
-    const result = await searchProviderEvidence(providerQuery, parsed.capabilities);
+    const result = await searchProviderEvidence(providerQuery, parsed.capabilities, {
+      trustedProviderUrls: options.trustedProviderUrls,
+    });
     return {
       providerQuery,
       documents: result.documents,

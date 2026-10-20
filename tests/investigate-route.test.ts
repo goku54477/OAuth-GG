@@ -112,4 +112,16 @@ describe("POST /api/guides/investigate", () => {
     expect(payload.redirectUrl).toBe(`/guides/${canonical.slug}`);
     expect(payload.generationDiagnostics).toMatchObject({ generationOutcome: "model-success" });
   });
+
+  it("does not claim success when canonical persistence fails", async () => {
+    mocks.saveGuide.mockRejectedValueOnce(new Error("database included secret detail"));
+
+    const response = await POST(new Request("http://localhost/api/guides/investigate", {
+      method: "POST",
+      body: JSON.stringify({ queryOrUrl: "Acme" }),
+    }));
+
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: "Failed to investigate provider" });
+  });
 });

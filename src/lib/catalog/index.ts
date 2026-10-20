@@ -14,6 +14,13 @@ import {
 const snapshot = ComposioToolkitSummarySchema.array().parse(snapshotJson);
 const bySlug = new Map(snapshot.map((toolkit) => [toolkit.slug, toolkit]));
 
+const providerDomainAliases = new Map([
+  ["github.com", "github"],
+  ["slack.com", "slack"],
+  ["google.com", "gmail"],
+  ["gmail.com", "gmail"],
+]);
+
 function cloneToolkit(toolkit: ComposioToolkitSummary): ComposioToolkitSummary {
   return {
     ...toolkit,
@@ -66,16 +73,21 @@ export async function getToolkitByQuery(queryOrUrl: string): Promise<ComposioToo
 
   try {
     const hostname = new URL(query).hostname.replace(/^www\./, "");
-    const known = isHostOrSubdomain(hostname, "github.com") ? "github"
-      : isHostOrSubdomain(hostname, "slack.com") ? "slack"
-      : isHostOrSubdomain(hostname, "google.com") || isHostOrSubdomain(hostname, "gmail.com") ? "gmail"
-      : null;
-    if (known && bySlug.has(known)) return cloneToolkit(bySlug.get(known)!);
+    for (const [domain, slug] of providerDomainAliases) {
+      if (isHostOrSubdomain(hostname, domain) && bySlug.has(slug)) {
+        return cloneToolkit(bySlug.get(slug)!);
+      }
+    }
 
-    const labels = hostname.split(".");
-    const registrableLabel = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
-    const toolkit = bySlug.get(registrableLabel);
-    if (toolkit) return cloneToolkit(toolkit);
+    for (const toolkit of snapshot) {
+      if (!toolkit.appUrl) continue;
+      try {
+        const appHostname = new URL(toolkit.appUrl).hostname.replace(/^www\./, "");
+        if (isHostOrSubdomain(hostname, appHostname)) return cloneToolkit(toolkit);
+      } catch {
+        // Ignore malformed catalog URLs.
+      }
+    }
   } catch {
     // Non-URL queries are only accepted as exact catalog slugs.
   }

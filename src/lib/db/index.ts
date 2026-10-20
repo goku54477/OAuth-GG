@@ -972,21 +972,9 @@ export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
 
   const safeGuide = ProviderGuideSchema.parse(guide);
 
-  // Update in-memory map
-  inMemoryGuides.set(safeGuide.slug, safeGuide);
-  if (safeGuide.toolkitSlug) {
-    inMemoryGuides.set(safeGuide.toolkitSlug.toLowerCase(), safeGuide);
-  }
-
-  // Update JSON fallback file
-  const fallbackRecords = loadFallbackFile();
-  fallbackRecords[safeGuide.slug] = safeGuide;
-  saveFallbackFile(fallbackRecords);
-
-  // Try libSQL database
-  try {
-    const client = await getClient();
-    if (client) {
+  const client = await getClient();
+  if (client) {
+    try {
       await client.execute({
         sql: `
           INSERT INTO guides (
@@ -1010,10 +998,20 @@ export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
             JSON.stringify(safeGuide),
         ],
       });
+    } catch {
+      throw new Error("Failed to persist guide");
     }
-  } catch {
-    // Graceful fallback: data is already preserved in JSON and in-memory
   }
+
+  inMemoryGuides.set(safeGuide.slug, safeGuide);
+  if (safeGuide.toolkitSlug) {
+    inMemoryGuides.set(safeGuide.toolkitSlug.toLowerCase(), safeGuide);
+  }
+
+  const fallbackRecords = loadFallbackFile();
+  fallbackRecords[safeGuide.slug] = safeGuide;
+  saveFallbackFile(fallbackRecords);
+
   return safeGuide;
 }
 

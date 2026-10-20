@@ -45,6 +45,7 @@ export interface GenerateGuideInput {
   queryOrUrl: string;
   capabilities?: string[];
   catalogItem?: ComposioToolkitSummary | null;
+  catalogEpistemicStatus?: "observed" | "source-supported";
   providerIdentityVerified?: boolean;
   researchBundle?: {
     providerQuery: string;
@@ -94,7 +95,7 @@ function generationFailureCategory(error: unknown): string {
 export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGuide {
   const { queryOrUrl, catalogItem, researchBundle } = input;
   const providerName = deriveProviderName(queryOrUrl, catalogItem);
-  const slug = catalogItem?.slug || slugify(queryOrUrl) || "unknown-provider";
+  const slug = catalogItem?.slug || slugify(providerName) || "unknown-provider";
   const now = new Date().toISOString();
 
   const citations: EvidenceCitation[] = (
@@ -119,7 +120,9 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
         : "Composio managed OAuth availability is unknown because this provider is not matched to catalog metadata.",
       customAuthConfigSnippet: "",
       composioRedirectUriHint: "",
-      epistemicStatus: catalogItem ? "observed" : "unknown",
+      epistemicStatus: catalogItem
+        ? input.catalogEpistemicStatus ?? "source-supported"
+        : "unknown",
       citationIds: citations.map((c) => c.id),
     },
     variants: [
@@ -161,7 +164,8 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
       },
     ],
     explicitUnknowns: [
-      "Provider identity and official OAuth documentation",
+      ...(!catalogItem && !input.providerIdentityVerified ? ["Provider identity"] : []),
+      ...(citations.length === 0 ? ["Official OAuth documentation"] : []),
       "OAuth application type, callback URL, and client-credential requirements",
       "Permission scopes and sensitivity classifications",
       "Testing, review, and security-audit requirements",
@@ -271,7 +275,9 @@ CRITICAL SECURITY REQUIREMENTS:
       composioIntegration: {
         ...draft.composioIntegration,
         managedOAuthAvailable: input.catalogItem?.hasManagedOAuth ?? false,
-        epistemicStatus: input.catalogItem ? "observed" : "unknown",
+        epistemicStatus: input.catalogItem
+          ? input.catalogEpistemicStatus ?? "source-supported"
+          : "unknown",
       },
       citations: docs.map((document) => document.citation),
     });

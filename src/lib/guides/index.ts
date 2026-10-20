@@ -59,6 +59,7 @@ export async function generateOrResolveGuideWithDiagnostics(input: {
   queryOrUrl: string;
   capabilities?: string[];
   catalogItem?: ComposioToolkitSummary | null;
+  catalogEpistemicStatus?: "observed" | "source-supported";
   providerIdentityVerified?: boolean;
   researchBundle?: {
     providerQuery: string;

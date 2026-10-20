@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { isIP } from "node:net";
 
 import type { RetrievedDocument } from "./index";
 import { sanitizeUntrustedText } from "./html-extractor";
@@ -22,6 +23,7 @@ const SHARED_HOST_SUFFIXES = [
 interface ExaSearchOptions {
   apiKey?: string;
   fetch?: typeof fetch;
+  trustedProviderUrls?: string[];
 }
 
 interface ExaResult {
@@ -44,19 +46,18 @@ function resultId(sourceUrl: string): string {
   return `research-${createHash("sha256").update(sourceUrl).digest("hex").slice(0, 16)}`;
 }
 
-function providerTokens(providerQuery: string): string[] {
-  return providerQuery
-    .toLowerCase()
-    .split(/[^a-z0-9]+/)
-    .filter((token) => token.length >= 3);
+function hostMatches(hostname: string, trustedHostname: string): boolean {
+  return hostname === trustedHostname || hostname.endsWith(`.${trustedHostname}`);
 }
 
 export function classifyProviderAuthority(
   providerQuery: string,
   sourceUrl: string,
+  trustedProviderUrls: string[] = [],
 ): EvidenceCitation["authorityType"] {
   const hostname = new URL(sourceUrl).hostname;
   const normalizedHostname = hostname.toLowerCase();
+  if (isIP(normalizedHostname)) return "secondary-technical";
   if (
     SHARED_HOST_SUFFIXES.some(
       (suffix) => normalizedHostname === suffix || normalizedHostname.endsWith(`.${suffix}`),
@@ -65,11 +66,20 @@ export function classifyProviderAuthority(
     return "secondary-technical";
   }
 
-  const labels = normalizedHostname.split(".");
-  const registrableLabel = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
-  const tokens = providerTokens(providerQuery);
-  const compactProvider = tokens.join("");
-  return tokens.some((token) => token === registrableLabel) || compactProvider === registrableLabel
+  const trustedHostnames = trustedProviderUrls.flatMap((value) => {
+    try {
+      return [new URL(value).hostname.replace(/^www\./, "").toLowerCase()];
+    } catch {
+      return [];
+    }
+  });
+  try {
+    trustedHostnames.push(new URL(providerQuery).hostname.replace(/^www\./, "").toLowerCase());
+  } catch {
+    // A name-only query cannot establish domain ownership by itself.
+  }
+
+  return trustedHostnames.some((trustedHostname) => hostMatches(normalizedHostname, trustedHostname))
     ? "official-provider-docs"
     : "secondary-technical";
 }
@@ -141,7 +151,11 @@ export async function searchProviderEvidence(
 
     const sourceUrl = validation.normalizedUrl;
     const hostname = new URL(sourceUrl).hostname;
-    const authorityType = classifyProviderAuthority(providerQuery, sourceUrl);
+    const authorityType = classifyProviderAuthority(
+      providerQuery,
+      sourceUrl,
+      options.trustedProviderUrls,
+    );
     if (authorityType !== "official-provider-docs") {
       warnings.push(`Provider ownership could not be verified for ${hostname}`);
     }
