@@ -867,11 +867,13 @@ let dbInitialized = false;
 let dbInitializationFailed = false;
 
 function getFallbackFilePath(): string {
-  return path.resolve(process.cwd(), "data", "guides-fallback.json");
+  return process.env.GUIDES_FALLBACK_FILE
+    ? path.resolve(process.env.GUIDES_FALLBACK_FILE)
+    : path.resolve(process.cwd(), "data", "guides-fallback.json");
 }
 
 function ensureDataDir(): void {
-  const dataDir = path.resolve(process.cwd(), "data");
+  const dataDir = path.dirname(getFallbackFilePath());
   if (!fs.existsSync(dataDir)) {
     try {
       fs.mkdirSync(dataDir, { recursive: true });

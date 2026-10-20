@@ -1,8 +1,26 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+
+import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { saveGuide, getGuideBySlug, listSavedGuides, GMAIL_GUIDE_SEED } from "@/lib/db";
 import type { ProviderGuide } from "@/types/contracts";
 
 describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
+  const testDir = path.join(os.tmpdir(), `oauth-workbench-db-${process.pid}`);
+  const fallbackPath = path.join(testDir, "guides-fallback.json");
+
+  beforeAll(() => {
+    fs.mkdirSync(testDir, { recursive: true });
+    process.env.GUIDES_FALLBACK_FILE = fallbackPath;
+    process.env.TURSO_DATABASE_URL = "file::memory:";
+  });
+
+  afterAll(() => {
+    fs.rmSync(testDir, { recursive: true, force: true });
+    delete process.env.GUIDES_FALLBACK_FILE;
+    delete process.env.TURSO_DATABASE_URL;
+  });
   const testGuide: ProviderGuide = {
     slug: "linear-oauth-sync-test",
     providerName: "Linear",
@@ -137,6 +155,8 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
 
   it("should save a new guide and retrieve it by slug", async () => {
     await saveGuide(testGuide);
+
+    expect(fs.existsSync(fallbackPath)).toBe(true);
 
     const retrieved = await getGuideBySlug("linear-oauth-sync-test");
     expect(retrieved).not.toBeNull();
