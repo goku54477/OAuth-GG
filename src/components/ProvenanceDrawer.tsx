@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import type { EvidenceCitation, EpistemicStatus } from "@/types/contracts";
 import { ExternalLink, X, ShieldCheck, Clock, FileText, CheckCircle2 } from "lucide-react";
+import { getCitationSourceLabel, getMissingQuoteLabel } from "@/components/workbench-utils";
 
 export function getEpistemicBadgeClasses(status: EpistemicStatus): string {
   switch (status) {
@@ -55,15 +56,21 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
   activeClaim,
   notes,
 }) => {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isOpen) {
-        onClose();
-      }
+    if (!isOpen || !citation) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialog.open) dialog.showModal();
+    closeButtonRef.current?.focus();
+    return () => {
+      if (dialog.open) dialog.close();
+      previousFocus?.focus();
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [citation, isOpen]);
 
   if (!isOpen || !citation) return null;
 
@@ -99,7 +106,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
   const authorityInfo = getAuthorityBadge(citation.authorityType);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <dialog ref={dialogRef} onCancel={(event) => { event.preventDefault(); onClose(); }} className="fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-0 text-zinc-300" aria-labelledby="provenance-title">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
@@ -115,7 +122,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-sans font-semibold text-sm text-slate-100">
+              <h3 id="provenance-title" className="font-sans font-semibold text-sm text-slate-100">
                 Claim Provenance Inspector
               </h3>
               <p className="font-mono text-[11px] text-slate-400">
@@ -124,7 +131,9 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
             </div>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
+            aria-label="Close provenance inspector"
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
             title="Close drawer (Esc)"
           >
@@ -187,7 +196,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
             <div className="flex items-center gap-1.5 text-slate-400 font-mono text-xs">
               <FileText className="w-4 h-4 text-emerald-400" />
               <span className="uppercase text-[11px] font-semibold tracking-wider text-slate-300">
-                Verbatim Documentation Quote
+                Captured documentation quote
               </span>
             </div>
             {citation.verbatimQuote ? (
@@ -196,7 +205,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
               </blockquote>
             ) : (
               <p className="text-slate-400 text-xs italic">
-                No verbatim text captured for this citation. Verified via endpoint inspection.
+                {getMissingQuoteLabel()}
               </p>
             )}
           </div>
@@ -204,12 +213,15 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
           {/* Source Document Reference */}
           <div className="rounded-lg bg-slate-950 border border-slate-800 p-4 space-y-3">
             <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-              Official Primary Source
+              Source document
             </span>
             <div className="space-y-1.5">
               <h4 className="font-sans font-medium text-sm text-slate-100">
                 {citation.sourceTitle}
               </h4>
+              <p className="text-[10px] uppercase tracking-wider text-slate-500">
+                {getCitationSourceLabel(citation.authorityType)}
+              </p>
               <p className="font-mono text-xs text-slate-400 break-all select-all">
                 {citation.sourceUrl}
               </p>
@@ -236,7 +248,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
           <div className="p-3.5 rounded-lg bg-slate-900/50 border border-slate-800/80 flex items-start gap-2.5 text-xs text-slate-400">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
             <span>
-              All citations in this workbench are cross-referenced with vendor API scopes and CASA Tier 2/3 audit catalogs.
+              This panel shows the source and epistemic status attached to the selected claim.
             </span>
           </div>
         </div>
@@ -251,6 +263,6 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };
