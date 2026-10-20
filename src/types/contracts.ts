@@ -5,6 +5,7 @@ export const EpistemicStatusSchema = z.enum([
   "observed",
   "tested",
   "estimated",
+  "recommendation",
   "unknown",
 ]);
 export type EpistemicStatus = z.infer<typeof EpistemicStatusSchema>;

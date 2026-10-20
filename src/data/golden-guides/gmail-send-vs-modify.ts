@@ -75,7 +75,7 @@ export const gmailSendVsModifyGuide: ProviderGuide = {
           classification: "restricted",
           requiredForCapability: "Read all emails, message headers, and attachments in user inbox",
           triggersExternalReview: true,
-          triggersSecurityAudit: true,
+          triggersSecurityAudit: false,
           leastPrivilegeAlternative: "https://www.googleapis.com/auth/gmail.send (if outbound sending only)",
           epistemicStatus: "source-supported",
           citationIds: ["cite-google-gmail-scopes"],
@@ -86,7 +86,7 @@ export const gmailSendVsModifyGuide: ProviderGuide = {
           classification: "restricted",
           requiredForCapability: "Read, draft, modify, mark read/unread, and delete user emails; apply or remove labels on messages through messages.modify.",
           triggersExternalReview: true,
-          triggersSecurityAudit: true,
+          triggersSecurityAudit: false,
           leastPrivilegeAlternative: "https://www.googleapis.com/auth/gmail.send",
           epistemicStatus: "source-supported",
           citationIds: ["cite-google-gmail-scopes", "cite-google-labels"],
@@ -95,7 +95,7 @@ export const gmailSendVsModifyGuide: ProviderGuide = {
       approvalGateSummary:
         "Restricted scopes require restricted-scope OAuth verification; security-assessment requirements depend on whether restricted data is stored or transmitted.",
       estimatedReviewTimeline: "Unknown",
-      securityAuditRequired: "Conditional; see cited Google scope documentation.",
+      securityAuditRequired: "Unknown",
       pros: [
         "Enables full bi-directional email client syncing, intelligent inbox triage, and draft modification",
       ],
@@ -157,7 +157,13 @@ export const gmailSendVsModifyGuide: ProviderGuide = {
     },
   ],
   testingAndSandboxRules: [],
-  distributionAndReviewChecklist: [],
+  distributionAndReviewChecklist: [
+    {
+      claim: "Google requires a security assessment when an app stores or transmits restricted-scope data on servers.",
+      epistemicStatus: "source-supported",
+      citationIds: ["cite-google-gmail-scopes"],
+    },
+  ],
   practicalObservations: [],
   explicitUnknowns: [
     "Provider-specific verification timelines, fees, and assessment details",

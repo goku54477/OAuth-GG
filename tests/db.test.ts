@@ -149,7 +149,7 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     const retrieved = await getGuideBySlug("linear-oauth-sync-test");
     expect(retrieved).not.toBeNull();
     expect(retrieved?.slug).toBe(testGuide.slug);
-    expect(retrieved?.title).toBe(testGuide.title);
+    expect(retrieved?.title).toBe("Linear Integration & OAuth Guide (Partial Reference)");
     expect(retrieved?.providerName).toBe("Linear");
     expect(retrieved?.variants.length).toBe(2);
     expect(retrieved?.variants[0].scopes).toEqual([]);

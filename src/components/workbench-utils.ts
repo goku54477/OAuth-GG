@@ -45,7 +45,12 @@ export function hasSubstantiveGuideComparison(guide: ProviderGuide): boolean {
 }
 
 export function getGuideGenerationLabel(guide: Pick<ProviderGuide, "generationMode">): string {
-  return guide.generationMode === "golden-verified" ? "reference guide" : guide.generationMode;
+  const labels: Record<ProviderGuide["generationMode"], string> = {
+    "golden-verified": "Reference guide",
+    "live-researched": "Live researched",
+    "partial-fallback": "Partial guide",
+  };
+  return labels[guide.generationMode];
 }
 
 export function normalizeWorkbenchTab(value: string | null): WorkbenchTab {

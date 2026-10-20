@@ -8,7 +8,10 @@ import {
   ProviderGuideSchema,
 } from "@/types/contracts";
 import { matchGoldenGuideSlug } from "@/lib/router/decision-engine";
-import { verifyAndAuditGuide } from "@/lib/guides/evidence-validator";
+import {
+  normalizeReferenceGuideForEvidence,
+  verifyAndAuditGuide,
+} from "@/lib/guides/evidence-validator";
 import {
   generateStructuredGuideWithDiagnostics,
   type GuideGenerationDiagnostics,
@@ -21,20 +24,21 @@ export {
   verifyAndAuditGuide,
   auditGuideWithReport,
   normalizeGuideForEvidence,
+  normalizeReferenceGuideForEvidence,
 } from "@/lib/guides/evidence-validator";
 export { generateStructuredGuide, buildPartialFallbackGuide } from "@/lib/guides/generator";
 
 const goldenGuidesMap = new Map<string, ProviderGuide>([
-  [githubPublicIssuesGuide.slug, githubPublicIssuesGuide],
-  [slackChannelBotGuide.slug, slackChannelBotGuide],
-  [gmailSendVsModifyGuide.slug, gmailSendVsModifyGuide],
+  [githubPublicIssuesGuide.slug, normalizeReferenceGuideForEvidence(githubPublicIssuesGuide)],
+  [slackChannelBotGuide.slug, normalizeReferenceGuideForEvidence(slackChannelBotGuide)],
+  [gmailSendVsModifyGuide.slug, normalizeReferenceGuideForEvidence(gmailSendVsModifyGuide)],
 ]);
 
 // Also alias toolkit slugs if needed
 const goldenGuidesByToolkit = new Map<string, ProviderGuide>([
-  ["github", githubPublicIssuesGuide],
-  ["slack", slackChannelBotGuide],
-  ["gmail", gmailSendVsModifyGuide],
+  ["github", normalizeReferenceGuideForEvidence(githubPublicIssuesGuide)],
+  ["slack", normalizeReferenceGuideForEvidence(slackChannelBotGuide)],
+  ["gmail", normalizeReferenceGuideForEvidence(gmailSendVsModifyGuide)],
 ]);
 
 /**

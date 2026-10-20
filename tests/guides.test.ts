@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ProviderGuideSchema, type ProviderGuide } from "@/types/contracts";
+import { EpistemicStatusSchema, ProviderGuideSchema, type ProviderGuide } from "@/types/contracts";
 import {
   buildPartialFallbackGuide,
   getGoldenGuideBySlug,
@@ -8,6 +8,7 @@ import {
   verifyAndAuditGuide,
   auditGuideWithReport,
   normalizeGuideForEvidence,
+  normalizeReferenceGuideForEvidence,
   githubPublicIssuesGuide,
   slackChannelBotGuide,
   gmailSendVsModifyGuide,
@@ -51,15 +52,13 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
       expect(variantA?.recommendedAppType).toBe("GitHub App");
 
       const scopesA = variantA?.scopes.map((s) => s.scope);
-      expect(scopesA).toContain("issues:write");
-      expect(scopesA).toContain("metadata:read");
+      expect(scopesA).toContain("Issues: write");
+      expect(scopesA).not.toContain("metadata:read");
 
-      // Check fine-grained benefits
+      // Check the source-backed least-privilege distinction without invented operations data.
       const pros = variantA?.pros.join(" ").toLowerCase();
-      expect(pros).toContain("source code");
-      expect(pros).toContain("1-hour");
-      expect(pros).toContain("rate limits");
-      expect(pros).toContain("organization");
+      expect(pros).toContain("repository code");
+      expect(pros).not.toContain("rate limit");
 
       // Variant B: OAuth App public_repo warning
       const variantB = guide.variants.find((v) => v.variantId === "github-oauth-public-repo");
@@ -72,20 +71,25 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
 
       // Composio Integration
       expect(guide.composioIntegration.managedOAuthAvailable).toBe(true);
-      expect(guide.composioIntegration.managedVsCustomVerdict.toLowerCase()).toContain("custom auth_configs");
-      expect(guide.composioIntegration.managedVsCustomVerdict.toLowerCase()).toContain("rate limits");
+      expect(guide.composioIntegration.managedVsCustomVerdict).toContain("catalog metadata");
+      expect(guide.composioIntegration.customAuthConfigSnippet).toBe("");
+      expect(guide.composioIntegration.composioRedirectUriHint).toBe("");
+      expect(guide.variants.every((variant) => variant.estimatedReviewTimeline === "Unknown")).toBe(true);
+      expect(guide.variants.every((variant) => variant.securityAuditRequired === "Unknown")).toBe(true);
+      expect(guide.explicitUnknowns).toContain("Provider review timelines and security-assessment requirements");
 
       // Citations
       const urls = guide.citations.map((c) => c.sourceUrl);
       expect(urls).toContain(
-        "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps"
+        "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app"
+      );
+      expect(urls).toContain(
+        "https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps"
       );
       expect(urls).toContain(
         "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps"
       );
-      expect(urls).toContain(
-        "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app"
-      );
+      expect(urls.every((url) => url.startsWith("https://docs.github.com/"))).toBe(true);
     });
   });
 
@@ -103,7 +107,7 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
       const scopesA = variantA?.scopes.map((s) => s.scope);
       expect(scopesA).toContain("channels:history");
       expect(scopesA).toContain("chat:write");
-      expect(scopesA).toContain("groups:history");
+      expect(scopesA).not.toContain("groups:history");
 
       // Setup steps and distribution checklist
       const stepText = guide.registrationSteps.map((s) => s.instructions + " " + s.title).join(" ");
@@ -111,20 +115,22 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
       expect(stepText).toContain("Manage Distribution");
 
       const checklistClaims = guide.distributionAndReviewChecklist.map((c) => c.claim).join(" ");
-      expect(checklistClaims).toContain("Public Distribution");
-      expect(checklistClaims).toContain("state parameter");
+      expect(checklistClaims).toContain("Unlisted distribution");
+      expect(checklistClaims).toContain("Slack Marketplace");
 
       // Variant B: Marketplace requirements
       const variantB = guide.variants.find((v) => v.variantId === "slack-marketplace-listed");
       expect(variantB).toBeDefined();
-      const consB = variantB?.cons.join(" ");
-      expect(consB).toContain("tokens_revoked");
-      expect(consB).toContain("app_uninstalled");
+      expect(variantB?.estimatedReviewTimeline).toBe("Unknown");
+      expect(variantB?.securityAuditRequired).toBe("Unknown");
+      expect(guide.composioIntegration.customAuthConfigSnippet).toBe("");
+      expect(guide.composioIntegration.composioRedirectUriHint).toBe("");
+      expect(guide.explicitUnknowns).toContain("Slack Marketplace review timeline and security-review requirements");
 
       // Citations
       const urls = guide.citations.map((c) => c.sourceUrl);
-      expect(urls).toContain("https://docs.slack.dev/tools/java-slack-sdk/guides/app-distribution");
-      expect(urls).toContain("https://developer.salesforce.com/docs/platform/salesforce-slack-sdk/guide/scopes.html");
+      expect(urls).toContain("https://docs.slack.dev/app-management/distribution/");
+      expect(urls).toContain("https://docs.slack.dev/authentication/installing-with-oauth/");
     });
   });
 
@@ -160,10 +166,13 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
       expect(variantB).toBeDefined();
       const readScope = variantB?.scopes.find((s) => s.scope.includes("gmail.readonly"));
       expect(readScope?.classification).toBe("restricted");
-      expect(readScope?.triggersSecurityAudit).toBe(true);
+      expect(readScope?.triggersSecurityAudit).toBe(false);
 
       expect(variantB?.estimatedReviewTimeline).toBe("Unknown");
-      expect(variantB?.securityAuditRequired).toContain("Conditional");
+      expect(variantB?.securityAuditRequired).toBe("Unknown");
+      expect(guide.distributionAndReviewChecklist.map((item) => item.claim).join(" ")).toContain(
+        "stores or transmits restricted-scope data",
+      );
 
       expect(guide.testingAndSandboxRules).toEqual([]);
       expect(guide.explicitUnknowns).toContain("Provider-specific verification timelines, fees, and assessment details");
@@ -179,6 +188,36 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
 });
 
 describe("Workstream 3: Deterministic Evidence Validator", () => {
+  it("supports recommendation as a distinct epistemic status", () => {
+    expect(EpistemicStatusSchema.parse("recommendation")).toBe("recommendation");
+  });
+
+  it("enforces safe reference-guide configuration and review defaults", () => {
+    const unsafeReference: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      composioIntegration: {
+        ...githubPublicIssuesGuide.composioIntegration,
+        managedVsCustomVerdict: "Production requires a custom auth_config.",
+        customAuthConfigSnippet: "client_secret={{SECRET}}",
+        composioRedirectUriHint: "https://composio.example.com/callback",
+      },
+      variants: githubPublicIssuesGuide.variants.map((variant) => ({
+        ...variant,
+        estimatedReviewTimeline: "Instant",
+        securityAuditRequired: "None",
+      })),
+    };
+
+    const normalized = normalizeReferenceGuideForEvidence(unsafeReference);
+
+    expect(normalized.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(normalized.composioIntegration.composioRedirectUriHint).toBe("");
+    expect(normalized.composioIntegration.managedVsCustomVerdict).toContain("catalog metadata");
+    expect(normalized.variants.every((variant) => variant.estimatedReviewTimeline === "Unknown")).toBe(true);
+    expect(normalized.variants.every((variant) => variant.securityAuditRequired === "Unknown")).toBe(true);
+    expect(JSON.stringify(normalized)).not.toContain("composio.example.com");
+  });
+
   it("normalizes live guides into citation-backed documentation without invented configuration", () => {
     const unsafeLiveGuide: ProviderGuide = {
       ...githubPublicIssuesGuide,
@@ -216,6 +255,8 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     const normalized = normalizeGuideForEvidence(unsafeLiveGuide);
 
     expect(normalized.completenessStatus).toBe("partial");
+    expect(normalized.title).toBe("GitHub Integration & OAuth Guide (Partial Reference)");
+    expect(normalized.subtitle).toBe("Provider-specific OAuth configuration could not be fully verified from trusted evidence.");
     expect(normalized.composioIntegration.customAuthConfigSnippet).toBe("");
     expect(normalized.composioIntegration.composioRedirectUriHint).toBe("");
     expect(normalized.composioIntegration.managedVsCustomVerdict).not.toContain("Production");
@@ -230,14 +271,14 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
 
   it("preserves source-supported status when citations are valid and present in allowedSourceUrls", () => {
     const allowedUrls = [
-      "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps",
+      "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app",
+      "https://docs.github.com/en/rest/authentication/permissions-required-for-github-apps",
       "https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps",
-      "https://docs.composio.dev/docs/authentication/custom-app-vs-managed-app",
     ];
 
     const audited = verifyAndAuditGuide(githubPublicIssuesGuide, allowedUrls);
     expect(audited.variants[0].scopes[0].epistemicStatus).toBe("source-supported");
-    expect(audited.composioIntegration.epistemicStatus).toBe("source-supported");
+    expect(audited.composioIntegration.epistemicStatus).toBe("observed");
   });
 
   it("downgrades claims when citation URL is not in allowedSourceUrls for live-researched guides", () => {
@@ -343,27 +384,28 @@ describe("Workstream 3: Decision Engine & Guide Generator", () => {
     expect(broadVariant.variantId).toBe("gmail-read-modify-restricted");
   });
 
-  it("evaluates security review gates accurately", () => {
+  it("does not invent security-review timelines from scope flags", () => {
     const sensitiveScopes = gmailSendVsModifyGuide.variants[0].scopes;
     const sensitiveEval = evaluateSecurityReviewTriggers(sensitiveScopes);
     expect(sensitiveEval.triggersReview).toBe(true);
     expect(sensitiveEval.triggersAudit).toBe(false);
-    expect(sensitiveEval.estimatedTimeline).toBe("3–7 business days");
+    expect(sensitiveEval.estimatedTimeline).toBe("Unknown");
 
     const restrictedScopes = gmailSendVsModifyGuide.variants[1].scopes;
     const restrictedEval = evaluateSecurityReviewTriggers(restrictedScopes);
     expect(restrictedEval.triggersReview).toBe(true);
-    expect(restrictedEval.triggersAudit).toBe(true);
-    expect(restrictedEval.estimatedTimeline).toBe("4–8+ weeks");
+    expect(restrictedEval.triggersAudit).toBe(false);
+    expect(restrictedEval.estimatedTimeline).toBe("Unknown");
+    expect(restrictedEval.reviewType).not.toMatch(/CASA|AL1|AL2/i);
   });
 
-  it("recommends custom auth_config for production customer apps", () => {
+  it("does not infer a custom auth requirement without catalog evidence", () => {
     const strat = evaluateComposioAuthStrategy({
       isProduction: true,
       requiresCustomBranding: true,
     });
-    expect(strat.recommendedAuthScheme).toBe("CUSTOM_APP");
-    expect(strat.rationale).toContain("custom auth_configs");
+    expect(strat.recommendedAuthScheme).toBe("UNKNOWN");
+    expect(strat.rationale).toContain("cannot be determined");
   });
 
   it("resolves golden guide via generateOrResolveGuide", async () => {

@@ -17,6 +17,27 @@ export interface AuditResult {
 
 const COVERAGE_UNKNOWN = "Requested capability coverage";
 
+export function normalizeReferenceGuideForEvidence(guide: ProviderGuide): ProviderGuide {
+  if (guide.generationMode !== "golden-verified") return ProviderGuideSchema.parse(guide);
+
+  return ProviderGuideSchema.parse({
+    ...guide,
+    composioIntegration: {
+      ...guide.composioIntegration,
+      managedVsCustomVerdict: guide.composioIntegration.epistemicStatus === "unknown"
+        ? "Composio managed OAuth availability is unknown because no catalog metadata is available."
+        : "Managed OAuth availability is reported by current Composio catalog metadata. Production suitability is not inferred.",
+      customAuthConfigSnippet: "",
+      composioRedirectUriHint: "",
+    },
+    variants: guide.variants.map((variant) => ({
+      ...variant,
+      estimatedReviewTimeline: "Unknown",
+      securityAuditRequired: "Unknown",
+    })),
+  });
+}
+
 function isTrustedOfficialCitation(citation: EvidenceCitation): boolean {
   return citation.authorityType === "official-provider-docs"
     && citation.epistemicStatus === "source-supported"
@@ -33,7 +54,7 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
   // Curated reference guides are canonical source data. Generated and fallback
   // records cross the same conservative boundary before persistence.
   if (guide.generationMode === "golden-verified") {
-    return ProviderGuideSchema.parse(guide);
+    return normalizeReferenceGuideForEvidence(guide);
   }
 
   const citations = guide.citations.filter(isTrustedOfficialCitation);
@@ -100,6 +121,8 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
 
   return ProviderGuideSchema.parse({
     ...guide,
+    title: `${guide.providerName} Integration & OAuth Guide (Partial Reference)`,
+    subtitle: "Provider-specific OAuth configuration could not be fully verified from trusted evidence.",
     completenessStatus: "partial",
     composioIntegration: {
       managedOAuthAvailable: guide.composioIntegration.managedOAuthAvailable,

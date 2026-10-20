@@ -6,6 +6,7 @@ import {
   getCitationSourceLabel,
   getMissingQuoteLabel,
   getManagedOAuthLabel,
+  getGuideGenerationLabel,
   hasSubstantiveGuideComparison,
   guideToMarkdown,
   normalizeWorkbenchTab,
@@ -186,5 +187,11 @@ describe("workbench UI trust boundaries", () => {
     expect(getManagedOAuthLabel({ managedOAuthAvailable: true, epistemicStatus: "observed" })).toBe("Available");
     expect(getManagedOAuthLabel({ managedOAuthAvailable: false, epistemicStatus: "observed" })).toBe("Unavailable");
     expect(getManagedOAuthLabel({ managedOAuthAvailable: false, epistemicStatus: "unknown" })).toBe("Unknown");
+  });
+
+  it("uses neutral human-readable guide status labels", () => {
+    expect(getGuideGenerationLabel({ generationMode: "golden-verified" })).toBe("Reference guide");
+    expect(getGuideGenerationLabel({ generationMode: "live-researched" })).toBe("Live researched");
+    expect(getGuideGenerationLabel({ generationMode: "partial-fallback" })).toBe("Partial guide");
   });
 });
