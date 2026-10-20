@@ -128,6 +128,9 @@ describe("live guide generation", () => {
       modelAttempted: false,
       generationOutcome: "no-official-evidence",
     });
+    expect(noEvidence.guide.subtitle).toBe(
+      "Provider-specific OAuth configuration could not be verified from trusted evidence.",
+    );
 
     mocks.generateObject.mockResolvedValueOnce({ object: { title: "Incomplete" } });
     const invalid = await generateStructuredGuideWithDiagnostics({
@@ -140,6 +143,9 @@ describe("live guide generation", () => {
       generationOutcome: "model-output-invalid",
     });
     expect(invalid.guide.citations).toHaveLength(1);
+    expect(invalid.guide.subtitle).toBe(
+      "Official provider evidence was collected, but a complete structured guide could not be generated.",
+    );
     expect(invalid.guide.explicitUnknowns).not.toContain(
       "Provider identity and official OAuth documentation",
     );

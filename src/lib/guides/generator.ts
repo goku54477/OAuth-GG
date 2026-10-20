@@ -109,7 +109,9 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
     providerName,
     toolkitSlug: catalogItem?.slug,
     title: `${providerName} Integration & OAuth Guide (Partial Reference)`,
-    subtitle: "Provider-specific OAuth configuration could not be verified from trusted evidence.",
+    subtitle: citations.length > 0
+      ? "Official provider evidence was collected, but a complete structured guide could not be generated."
+      : "Provider-specific OAuth configuration could not be verified from trusted evidence.",
     generatedAt: now,
     generationMode: "partial-fallback",
     completenessStatus: "partial",
