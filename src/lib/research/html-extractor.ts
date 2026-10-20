@@ -31,7 +31,8 @@ const INJECTION_PATTERNS = [
 
 export function sanitizeUntrustedText(text: string): string {
   const withoutControls = text.replace(/[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, "");
-  const blocks = withoutControls.split(/\n{2,}/).map((block) => {
+  const rawBlocks = withoutControls.split(/\n{2,}/);
+  const blocks = rawBlocks.map((block) => {
     const lines = block.split(/\r?\n/);
     const redactedLines = lines.map((line) =>
       INJECTION_PATTERNS.some((pattern) => pattern.test(line)) ? REDACTION : line,
@@ -42,7 +43,23 @@ export function sanitizeUntrustedText(text: string): string {
     return INJECTION_PATTERNS.some((pattern) => pattern.test(collapsed)) ? REDACTION : block;
   });
 
+  const crossBlockRedactions = new Set<number>();
+  for (let start = 0; start < rawBlocks.length; start += 1) {
+    if (blocks[start].includes(REDACTION)) continue;
+    let collapsed = rawBlocks[start].replace(/\s+/g, " ");
+    for (let end = start + 1; end < rawBlocks.length; end += 1) {
+      if (blocks[end].includes(REDACTION)) break;
+      collapsed += ` ${rawBlocks[end].replace(/\s+/g, " ")}`;
+      if (collapsed.length > 240) break;
+      if (INJECTION_PATTERNS.some((pattern) => pattern.test(collapsed))) {
+        for (let index = start; index <= end; index += 1) crossBlockRedactions.add(index);
+        break;
+      }
+    }
+  }
+
   return blocks
+    .map((block, index) => (crossBlockRedactions.has(index) ? REDACTION : block))
     .join("\n\n")
     .split(/\r?\n/)
     .filter((line, index, lines) => line !== REDACTION || lines[index - 1] !== REDACTION)

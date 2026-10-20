@@ -6,6 +6,17 @@ import { validateExternalUrl } from "./url-guard";
 
 const EXA_SEARCH_URL = "https://api.exa.ai/search";
 const EXA_TIMEOUT_MS = 10_000;
+const SHARED_HOST_SUFFIXES = [
+  "appspot.com",
+  "github.io",
+  "gitlab.io",
+  "herokuapp.com",
+  "netlify.app",
+  "pages.dev",
+  "readthedocs.io",
+  "vercel.app",
+  "web.app",
+];
 
 interface ExaSearchOptions {
   apiKey?: string;
@@ -40,7 +51,16 @@ function providerTokens(providerQuery: string): string[] {
 }
 
 function looksOfficial(providerQuery: string, hostname: string): boolean {
-  const labels = hostname.toLowerCase().split(".");
+  const normalizedHostname = hostname.toLowerCase();
+  if (
+    SHARED_HOST_SUFFIXES.some(
+      (suffix) => normalizedHostname === suffix || normalizedHostname.endsWith(`.${suffix}`),
+    )
+  ) {
+    return false;
+  }
+
+  const labels = normalizedHostname.split(".");
   const registrableLabel = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
   return providerTokens(providerQuery).some((token) => token === registrableLabel);
 }

@@ -77,6 +77,7 @@ function isUnsafeIpv6(address: string): boolean {
   const globalUnicast = (words[0] & 0xe000) === 0x2000;
   const protocolAssignments = words[0] === 0x2001 && words[1] <= 0x01ff;
   const documentation = words[0] === 0x2001 && words[1] === 0x0db8;
+  const documentationV2 = words[0] === 0x3fff && (words[1] & 0xf000) === 0;
   const sixToFour = words[0] === 0x2002;
   const mappedIpv4 = words.slice(0, 5).every((word) => word === 0) && words[5] === 0xffff;
 
@@ -95,6 +96,7 @@ function isUnsafeIpv6(address: string): boolean {
     !globalUnicast ||
     protocolAssignments ||
     documentation ||
+    documentationV2 ||
     sixToFour
   );
 }
