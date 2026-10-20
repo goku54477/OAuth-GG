@@ -30,6 +30,12 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     generatedAt: "2026-10-20T12:00:00.000Z",
     generationMode: "live-researched",
     completenessStatus: "complete",
+    investigationContext: {
+      query: "Linear",
+      requestedCapabilities: ["read", "write"],
+      sourceMode: "official-documentation",
+      officialDocumentationUrl: "https://developers.linear.app/docs/oauth/authentication",
+    },
     composioIntegration: {
       managedOAuthAvailable: true,
       managedVsCustomVerdict: "Use managed for prototyping, BYO for production customer workspace auth.",
@@ -154,6 +160,7 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(retrieved?.variants.length).toBe(2);
     expect(retrieved?.variants[0].scopes).toEqual([]);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
+    expect(retrieved?.investigationContext).toEqual(testGuide.investigationContext);
   });
 
   it("should return null for unknown slugs", async () => {

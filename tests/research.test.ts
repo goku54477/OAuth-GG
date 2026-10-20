@@ -273,6 +273,28 @@ describe("Exa discovery", () => {
     expect(hasVerifiedProviderIdentity(null, [])).toBe(false);
   });
 
+  it("requires an outside-catalog provider to match the registrable documentation domain", () => {
+    const document = {
+      citation: {
+        id: "mastodon-docs",
+        sourceUrl: "https://docs.joinmastodon.org/methods/apps/",
+        sourceTitle: "Mastodon applications",
+        authorityType: "official-provider-docs" as const,
+        retrievedAt: "2026-10-20T00:00:00.000Z",
+        epistemicStatus: "source-supported" as const,
+      },
+      cleanMarkdown: "OAuth application registration",
+      highlights: [],
+      retrievalMethod: "direct-http-readability" as const,
+    };
+
+    expect(hasVerifiedProviderIdentity(null, [document], "Mastodon")).toBe(true);
+    expect(hasVerifiedProviderIdentity(null, [{
+      ...document,
+      citation: { ...document.citation, sourceUrl: "https://mastodon-docs.example.com/oauth" },
+    }], "Mastodon")).toBe(false);
+  });
+
   it("sends the bounded search request and returns sanitized official evidence", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(
       Response.json({
@@ -400,7 +422,6 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "Acme",
       capabilities: ["read"],
-      forceRefresh: false,
     }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result).toMatchObject({
@@ -418,7 +439,6 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "Acme",
       capabilities: ["read"],
-      forceRefresh: false,
     }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result.documents).toEqual([]);
@@ -439,7 +459,6 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "https://93.184.216.34/oauth#registration",
       capabilities: [],
-      forceRefresh: false,
     });
 
     expect(result.targetUrl).toBe("https://93.184.216.34/oauth");
@@ -448,6 +467,30 @@ describe("retrieveProviderEvidence", () => {
     expect(result.documents[0].cleanMarkdown).toContain("Register the redirect URI");
     expect(result.degradedMode).toBe(false);
     expect(vi.mocked(fetch).mock.calls[0][0].toString()).toBe("https://93.184.216.34/oauth");
+  });
+
+  it("uses an optional documentation URL directly while preserving the provider query", async () => {
+    vi.stubEnv("EXA_API_KEY", "configured-key");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response("<html><body><article><h1>OAuth setup</h1><p>Register an app.</p></article></body></html>", {
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+    );
+
+    const result = await retrieveProviderEvidence({
+      queryOrUrl: "Acme",
+      officialDocumentationUrl: "https://93.184.216.34/oauth",
+      capabilities: ["read"],
+    });
+
+    expect(result.providerQuery).toBe("Acme");
+    expect(result.targetUrl).toBe("https://93.184.216.34/oauth");
+    expect(result.documents).toHaveLength(1);
+    expect(result.documents[0].retrievalMethod).toBe("direct-http-readability");
+    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(1);
   });
 
   it("keeps usable official evidence live when another Exa result is unverified", async () => {
@@ -477,7 +520,6 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "Acme",
       capabilities: ["read"],
-      forceRefresh: false,
     }, { trustedProviderUrls: ["https://acme.com"] });
 
     expect(result.documents).toHaveLength(2);
@@ -489,7 +531,6 @@ describe("retrieveProviderEvidence", () => {
     const result = await retrieveProviderEvidence({
       queryOrUrl: "http://localhost/oauth",
       capabilities: [],
-      forceRefresh: false,
     });
 
     expect(result.documents).toEqual([]);

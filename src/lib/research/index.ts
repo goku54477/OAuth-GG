@@ -34,10 +34,33 @@ export { classifyProviderAuthority } from "./exa-client";
 export function hasVerifiedProviderIdentity(
   catalogItem: ComposioToolkitSummary | null,
   documents: RetrievedDocument[],
+  providerQuery?: string,
 ): boolean {
-  return Boolean(catalogItem) || documents.some(
+  if (catalogItem) return true;
+  const officialDocuments = documents.filter(
     (document) => document.citation.authorityType === "official-provider-docs",
   );
+  if (!providerQuery) return officialDocuments.length > 0;
+
+  const query = providerQuery.trim().toLowerCase();
+  try {
+    const queryHost = new URL(query).hostname.replace(/^www\./, "");
+    return officialDocuments.some((document) => {
+      const sourceHost = new URL(document.citation.sourceUrl).hostname.replace(/^www\./, "");
+      return sourceHost === queryHost
+        || sourceHost.endsWith(`.${queryHost}`)
+        || queryHost.endsWith(`.${sourceHost}`);
+    });
+  } catch {
+    const ignored = new Set(["api", "app", "developer", "developers", "docs", "documentation", "oauth", "the"]);
+    const tokens = query.split(/[^a-z0-9]+/).filter((token) => token.length >= 3 && !ignored.has(token));
+    const providerLabel = tokens.join("");
+    return tokens.length > 0 && officialDocuments.some((document) => {
+      const labels = new URL(document.citation.sourceUrl).hostname.replace(/^www\./, "").split(".");
+      const registrableLabel = (labels.at(-2) ?? labels[0]).replace(/[^a-z0-9]/g, "");
+      return registrableLabel === providerLabel || registrableLabel === `join${providerLabel}`;
+    });
+  }
 }
 
 function warningMessage(prefix: string): string {
@@ -50,10 +73,12 @@ export async function retrieveProviderEvidence(
 ): Promise<ResearchBundle> {
   const parsed = LiveResearchRequestSchema.parse(req);
   const providerQuery = parsed.queryOrUrl.trim();
-  const validation = validateExternalUrl(providerQuery);
+  const directDocumentationUrl = parsed.officialDocumentationUrl ?? providerQuery;
+  const validation = validateExternalUrl(directDocumentationUrl);
   const looksLikeUrl = /^[a-z][a-z\d+.-]*:\/\//i.test(providerQuery);
+  const hasDirectDocumentationUrl = Boolean(parsed.officialDocumentationUrl) || looksLikeUrl;
 
-  if (looksLikeUrl && (!validation.valid || !validation.normalizedUrl)) {
+  if (hasDirectDocumentationUrl && (!validation.valid || !validation.normalizedUrl)) {
     return {
       providerQuery,
       documents: [],
@@ -62,13 +87,16 @@ export async function retrieveProviderEvidence(
     };
   }
 
-  if (validation.valid && validation.normalizedUrl) {
+  if (hasDirectDocumentationUrl && validation.valid && validation.normalizedUrl) {
     try {
       const document = await fetchHtmlDocument(validation.normalizedUrl);
       document.citation.authorityType = classifyProviderAuthority(
         providerQuery,
         document.citation.sourceUrl,
-        options.trustedProviderUrls,
+        [
+          ...(options.trustedProviderUrls ?? []),
+          ...(parsed.officialDocumentationUrl ? [parsed.officialDocumentationUrl] : []),
+        ],
       );
       return {
         providerQuery,

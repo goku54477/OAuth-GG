@@ -12,6 +12,7 @@ const GeneratedGuideDraftSchema = ProviderGuideSchema.omit({
   providerName: true,
   toolkitSlug: true,
   generatedAt: true,
+  investigationContext: true,
   generationMode: true,
   completenessStatus: true,
   citations: true,

@@ -112,11 +112,10 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     };
   });
 
-  const explicitUnknowns = [...new Set([
-    ...guide.explicitUnknowns.filter((item) => !/\bcasa\b|al1|al2/i.test(item)),
+  const explicitUnknowns = [
     COVERAGE_UNKNOWN,
     "Provider review, audit, and configuration requirements",
-  ])];
+  ];
   const hasCatalogMetadata = guide.composioIntegration.epistemicStatus !== "unknown";
 
   return ProviderGuideSchema.parse({

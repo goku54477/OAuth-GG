@@ -109,6 +109,12 @@ export const ProviderGuideSchema = z.object({
   title: z.string(),
   subtitle: z.string(),
   generatedAt: z.string().datetime(),
+  investigationContext: z.object({
+    query: z.string(),
+    requestedCapabilities: z.array(z.string()),
+    sourceMode: z.enum(["catalog", "official-documentation"]),
+    officialDocumentationUrl: z.string().url().optional(),
+  }).optional(),
   generationMode: z.enum(["golden-verified", "live-researched", "partial-fallback"]),
   completenessStatus: z.enum(["complete", "partial", "degraded"]),
   composioIntegration: z.object({
@@ -132,6 +138,9 @@ export type ProviderGuide = z.infer<typeof ProviderGuideSchema>;
 export const LiveResearchRequestSchema = z.object({
   queryOrUrl: z.string().min(2).max(500),
   capabilities: z.array(z.string()).default(["read", "write", "external-distribution"]),
-  forceRefresh: z.boolean().default(false),
+  officialDocumentationUrl: z.string().url().max(1000).refine(
+    (value) => new URL(value).protocol === "https:",
+    "Official documentation URL must use HTTPS",
+  ).optional(),
 });
 export type LiveResearchRequest = z.infer<typeof LiveResearchRequestSchema>;

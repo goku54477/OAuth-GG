@@ -16,12 +16,14 @@ vi.mock("@/lib/research", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/research")>()),
   retrieveProviderEvidence: mocks.retrieveProviderEvidence,
 }));
-vi.mock("@/lib/guides", () => ({
+vi.mock("@/lib/guides", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/guides")>()),
   generateOrResolveGuideWithDiagnostics: mocks.generateOrResolveGuideWithDiagnostics,
 }));
 vi.mock("@/lib/db", () => ({ saveGuide: mocks.saveGuide }));
 
 import { gmailSendVsModifyGuide } from "@/data/golden-guides/gmail-send-vs-modify";
+import { getGoldenGuideBySlug } from "@/lib/guides";
 import { POST } from "@/app/api/guides/investigate/route";
 
 const officialDocument = {
@@ -75,6 +77,57 @@ describe("POST /api/guides/investigate", () => {
       expect.objectContaining({ catalogItem: null, providerIdentityVerified: true }),
     );
     expect(mocks.saveGuide).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps provider identity separate from a direct official documentation URL", async () => {
+    const response = await POST(new Request("http://localhost/api/guides/investigate", {
+      method: "POST",
+      body: JSON.stringify({
+        queryOrUrl: "Acme",
+        officialDocumentationUrl: "https://docs.acme.com/oauth",
+        capabilities: ["read"],
+      }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.retrieveProviderEvidence).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryOrUrl: "Acme",
+        officialDocumentationUrl: "https://docs.acme.com/oauth",
+      }),
+      expect.objectContaining({ trustedProviderUrls: ["https://docs.acme.com/oauth"] }),
+    );
+    expect(mocks.saveGuide).toHaveBeenCalledWith(expect.objectContaining({
+      investigationContext: {
+        query: "Acme",
+        requestedCapabilities: ["read"],
+        sourceMode: "official-documentation",
+        officialDocumentationUrl: "https://docs.acme.com/oauth",
+      },
+    }));
+  });
+
+  it("rejects an outside-catalog documentation host that does not match the provider identity", async () => {
+    mocks.retrieveProviderEvidence.mockResolvedValueOnce({
+      providerQuery: "Acme",
+      documents: [{
+        ...officialDocument,
+        citation: { ...officialDocument.citation, sourceUrl: "https://docs.unrelated-vendor.com/oauth" },
+      }],
+      warnings: [],
+      degradedMode: false,
+    });
+
+    const response = await POST(new Request("http://localhost/api/guides/investigate", {
+      method: "POST",
+      body: JSON.stringify({
+        queryOrUrl: "Acme",
+        officialDocumentationUrl: "https://docs.unrelated-vendor.com/oauth",
+      }),
+    }));
+
+    expect(response.status).toBe(422);
+    expect(mocks.saveGuide).not.toHaveBeenCalled();
   });
 
   it("rejects an identity with neither catalog metadata nor official evidence", async () => {
@@ -146,6 +199,6 @@ describe("POST /api/guides/investigate", () => {
 
     expect(response.status).toBe(200);
     expect(mocks.saveGuide).not.toHaveBeenCalled();
-    await expect(response.json()).resolves.toMatchObject({ guide: gmailSendVsModifyGuide });
+    await expect(response.json()).resolves.toMatchObject({ guide: getGoldenGuideBySlug("gmail") });
   });
 });

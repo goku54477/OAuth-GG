@@ -249,7 +249,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
         consolePath: "https://composio.example.com/config",
         criticalConfigValues: [{ label: "Redirect URI", value: "https://example.invalid" }],
       }],
-      explicitUnknowns: ["CASA AL1/AL2 requirements"],
+      explicitUnknowns: ["CASA AL1/AL2 requirements", "The provider does not publish a review timeline"],
     };
 
     const normalized = normalizeGuideForEvidence(unsafeLiveGuide);
@@ -266,6 +266,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(normalized.registrationSteps[0].consolePath).toMatch(/^https:\/\/docs\.github\.com/);
     expect(normalized.explicitUnknowns).toContain("Requested capability coverage");
     expect(normalized.explicitUnknowns.join(" ")).not.toMatch(/casa|al1|al2/i);
+    expect(normalized.explicitUnknowns.join(" ")).not.toContain("does not publish");
     expect(JSON.stringify(normalized)).not.toContain("composio.example.com");
   });
 
