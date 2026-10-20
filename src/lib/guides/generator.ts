@@ -234,8 +234,11 @@ CRITICAL SECURITY REQUIREMENTS:
 `;
 
     const result = await generateObject({
-      model: openai("gpt-4o-mini"),
+      // GPT-5 defaults to strict structured output in this SDK. This schema has optional fields,
+      // so request OpenAI JSON mode and validate the parsed result locally instead.
+      model: openai("gpt-5-nano", { structuredOutputs: false }),
       schema: ProviderGuideSchema,
+      mode: "json",
       prompt,
     });
 
@@ -244,7 +247,7 @@ CRITICAL SECURITY REQUIREMENTS:
     // If AI generation fails for any reason, gracefully fall back to the safe partial guide
     const fallback = buildPartialFallbackGuide(input);
     fallback.explicitUnknowns.push(
-      `Live LLM guide generation error: ${error instanceof Error ? error.message : String(error)}`
+      "Live LLM guide generation failed. Retry later or use verified provider documentation."
     );
     return fallback;
   }
