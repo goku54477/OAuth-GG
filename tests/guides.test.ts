@@ -351,7 +351,12 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
         estimatedReviewTimeline: "3 days",
         securityAuditRequired: "Always required",
       }],
-      registrationSteps: [],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Configure OAuth application",
+        instructions: "## OAuth configuration",
+        citationIds: [oauthCitation.id],
+      }],
       distributionAndReviewChecklist: [{
         claim: "Apps submitted to the HubSpot Marketplace must meet the certification requirements before listing.",
         epistemicStatus: "source-supported",
