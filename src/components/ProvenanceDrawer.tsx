@@ -99,7 +99,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
   const authorityInfo = getAuthorityBadge(citation.authorityType);
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end">
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-labelledby="provenance-title">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
@@ -115,7 +115,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
               <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-sans font-semibold text-sm text-slate-100">
+              <h3 id="provenance-title" className="font-sans font-semibold text-sm text-slate-100">
                 Claim Provenance Inspector
               </h3>
               <p className="font-mono text-[11px] text-slate-400">
@@ -125,6 +125,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
           </div>
           <button
             onClick={onClose}
+            aria-label="Close provenance inspector"
             className="p-1.5 rounded-md text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
             title="Close drawer (Esc)"
           >
@@ -236,7 +237,7 @@ export const ProvenanceDrawer: React.FC<ProvenanceDrawerProps> = ({
           <div className="p-3.5 rounded-lg bg-slate-900/50 border border-slate-800/80 flex items-start gap-2.5 text-xs text-slate-400">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
             <span>
-              All citations in this workbench are cross-referenced with vendor API scopes and CASA Tier 2/3 audit catalogs.
+              This panel shows the source and epistemic status attached to the selected claim.
             </span>
           </div>
         </div>

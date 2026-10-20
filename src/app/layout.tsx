@@ -4,7 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "AuthBench — Developer OAuth & App-Review Readiness Workbench",
   description:
-    "Interactive scope-delta workbench, CASA assessment calculator, and Composio OAuth integration telemetry.",
+    "Evidence-aware OAuth registration, scope, and app-review readiness guides backed by the Composio catalog.",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className="bg-slate-950 text-slate-100 antialiased min-h-screen selection:bg-slate-800 selection:text-slate-200">
+      <body className="min-h-screen bg-[#090a0f] text-zinc-300 antialiased">
         {children}
       </body>
     </html>
