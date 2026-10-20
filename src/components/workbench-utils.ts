@@ -61,6 +61,8 @@ export function readGuideRedirect(payload: unknown): string | null {
 
 export function guideToMarkdown(guide: ProviderGuide): string {
   const hasComparison = hasSubstantiveGuideComparison(guide);
+  const documentedScopes = guide.variants.flatMap((variant) => variant.scopes);
+  const known = (value: string) => value.trim().toLowerCase() !== "unknown";
   const claimSection = (title: string, items: ProviderGuide["testingAndSandboxRules"]) =>
     items.length
       ? [
@@ -93,16 +95,22 @@ export function guideToMarkdown(guide: ProviderGuide): string {
     ...(hasComparison ? guide.variants.flatMap((variant) => [
       `## ${variant.title}`,
       variant.summary,
-      `- Recommended app type: ${variant.recommendedAppType}`,
-      `- Approval gate: ${variant.approvalGateSummary}`,
-      `- Review timeline: ${variant.estimatedReviewTimeline}`,
-      `- Security audit: ${variant.securityAuditRequired}`,
+      ...(known(variant.recommendedAppType) ? [`- Recommended app type: ${variant.recommendedAppType}`] : []),
+      ...(known(variant.approvalGateSummary) ? [`- Approval gate: ${variant.approvalGateSummary}`] : []),
+      ...(known(variant.estimatedReviewTimeline) ? [`- Review timeline: ${variant.estimatedReviewTimeline}`] : []),
+      ...(known(variant.securityAuditRequired) ? [`- Security audit: ${variant.securityAuditRequired}`] : []),
       ...variant.scopes.map(
-        (scope) => `- Scope \`${scope.scope}\`: ${scope.requiredForCapability} (${scope.classification})`,
+        (scope) => `- Scope \`${scope.scope}\`: ${scope.requiredForCapability} (${scope.classification}; ${scope.epistemicStatus}${scope.citationIds.length ? `; citations: ${scope.citationIds.join(", ")}` : ""})`,
       ),
       ...(variant.pros.length ? ["### Advantages", ...variant.pros.map((item) => `- ${item}`)] : []),
       ...(variant.cons.length ? ["### Constraints", ...variant.cons.map((item) => `- ${item}`)] : []),
-    ]) : ["## Research incomplete", "No substantive capability comparison was verified."]),
+    ]) : documentedScopes.length ? [
+      "## Documented provider permissions",
+      "Permission names are source-backed; requested capability coverage remains unverified.",
+      ...documentedScopes.map(
+        (scope) => `- Scope \`${scope.scope}\`: ${scope.requiredForCapability} (${scope.epistemicStatus}${scope.citationIds.length ? `; citations: ${scope.citationIds.join(", ")}` : ""})`,
+      ),
+    ] : ["## Research incomplete", "No substantive capability comparison was verified."]),
     ...(guide.registrationSteps.length
       ? [
           "## Provider registration",
@@ -110,6 +118,7 @@ export function guideToMarkdown(guide: ProviderGuide): string {
             `### ${step.stepNumber}. ${step.title}`,
             `- Console path: ${step.consolePath}`,
             `- Status: ${step.epistemicStatus}`,
+            ...(step.citationIds.length ? [`- Citations: ${step.citationIds.join(", ")}`] : []),
             step.instructions,
             ...step.criticalConfigValues.map((value) => `- ${value.label}: ${value.value}`),
           ]),

@@ -150,6 +150,10 @@ describe("Workstream 3: Golden Guides Schema & Content Verification", () => {
 
       const labelsScope = variantA?.scopes.find((scope) => scope.scope.includes("gmail.labels"));
       expect(labelsScope?.requiredForCapability).toContain("does not apply labels to messages");
+      const modifyScope = guide.variants
+        .find((variant) => variant.variantId === "gmail-read-modify-restricted")?.scopes
+        .find((scope) => scope.scope.includes("gmail.modify"));
+      expect(modifyScope?.requiredForCapability).toContain("apply or remove labels on messages");
 
       // Variant B: Read/Modify Restricted Scope & CASA
       const variantB = guide.variants.find((v) => v.variantId === "gmail-read-modify-restricted");

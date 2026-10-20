@@ -126,7 +126,7 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
     composioIntegration: {
       managedOAuthAvailable: catalogItem?.hasManagedOAuth ?? false,
       managedVsCustomVerdict: catalogItem?.hasManagedOAuth
-        ? "Composio Managed OAuth is available for rapid prototyping, but custom auth_configs should be evaluated for enterprise production."
+        ? "Managed OAuth availability is reported by current Composio catalog metadata."
         : "Composio managed OAuth availability is unknown because this provider is not matched to catalog metadata.",
       customAuthConfigSnippet: "",
       composioRedirectUriHint: "",
@@ -258,11 +258,10 @@ ${d.highlights.join("\n")}
 
 CRITICAL SECURITY REQUIREMENTS:
 0. Keep every field concise so complete valid JSON fits within the output limit.
-1. Always contrast at least 2 variants: a recommended least-privilege variant (Variant A) and a broader/comparison variant (Variant B).
-2. For every scope, correctly classify as non-sensitive, sensitive, restricted, granular-bot, coarse-repo, or unknown.
-3. Identify external review gates and whether third-party security audits (e.g., CASA Tier AL1/AL2) are triggered.
-4. Provide concrete step-by-step console instructions with criticalConfigValues.
-5. Reference only citation IDs supplied with the documents. Do not create citations or provider identity fields.
+1. Include a permission name only when a cited official passage explicitly names it. Do not claim it covers a requested operation unless that mapping is directly documented.
+2. Do not infer sensitivity classifications, review or audit requirements, timelines, costs, application-type recommendations, custom credentials, redirect URIs, or console paths. Leave those fields Unknown or empty when sources do not establish them.
+3. For registration guidance, prefer a directly cited official documentation URL over an inferred console path.
+4. Reference only supplied citation IDs. Do not create citations or provider identity fields.
 `;
 
     const result = await generateObject({

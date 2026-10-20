@@ -176,6 +176,10 @@ describe("workbench UI trust boundaries", () => {
     };
 
     expect(hasSubstantiveGuideComparison(documentedOnly)).toBe(false);
+    const markdown = guideToMarkdown(documentedOnly);
+    expect(markdown).toContain("## Documented provider permissions");
+    expect(markdown).toContain("documented:scope");
+    expect(markdown).toContain("citations: stripe-docs");
   });
 
   it("uses epistemic status when labeling managed OAuth", () => {

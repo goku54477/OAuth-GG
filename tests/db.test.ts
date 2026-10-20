@@ -3,7 +3,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
-import { saveGuide, getGuideBySlug, listSavedGuides, GMAIL_GUIDE_SEED } from "@/lib/db";
+import { auditPersistedGuides, saveGuide, getGuideBySlug, listSavedGuides } from "@/lib/db";
 import type { ProviderGuide } from "@/types/contracts";
 
 describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
@@ -137,20 +137,8 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     ],
   };
 
-  it("should pre-seed and retrieve golden guides immediately", async () => {
-    const gmailGuide = await getGuideBySlug("gmail-send-vs-modify");
-    expect(gmailGuide).not.toBeNull();
-    expect(gmailGuide?.slug).toBe("gmail-send-vs-modify");
-    expect(gmailGuide?.providerName).toBe("Google / Gmail");
-    expect(gmailGuide?.variants.length).toBeGreaterThanOrEqual(1);
-
-    const githubGuide = await getGuideBySlug("github-public-issues");
-    expect(githubGuide).not.toBeNull();
-    expect(githubGuide?.slug).toBe("github-public-issues");
-
-    const slackGuide = await getGuideBySlug("slack-channel-bot");
-    expect(slackGuide).not.toBeNull();
-    expect(slackGuide?.slug).toBe("slack-channel-bot");
+  it("does not seed duplicated reference guides into persistence", async () => {
+    expect(await getGuideBySlug("gmail-send-vs-modify")).toBeNull();
   });
 
   it("should save a new guide and retrieve it by slug", async () => {
@@ -173,7 +161,7 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(nonexistent).toBeNull();
   });
 
-  it("round-trips a canonical partial guide without destroying verified metadata", async () => {
+  it("normalizes partial fallback records before persistence", async () => {
     const partialGuide: ProviderGuide = {
       ...testGuide,
       slug: "miro-partial-roundtrip-test",
@@ -191,10 +179,12 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     const saved = await saveGuide(partialGuide);
 
     const retrieved = await getGuideBySlug(partialGuide.slug);
-    expect(saved).toEqual(partialGuide);
-    expect(retrieved).toEqual(partialGuide);
+    expect(saved).toEqual(retrieved);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
-    expect(retrieved?.citations).toEqual(partialGuide.citations);
+    expect(retrieved?.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(retrieved?.registrationSteps[0]?.consolePath).toBe(partialGuide.citations[0].sourceUrl);
+    expect(retrieved?.distributionAndReviewChecklist).toEqual([]);
+    expect(retrieved?.explicitUnknowns).toContain("Requested capability coverage");
   });
 
   it("normalizes unsafe live-generation configuration before persistence", async () => {
@@ -216,21 +206,21 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(retrieved).toEqual(saved);
   });
 
-  it("should list saved guides including golden and newly saved guides", async () => {
+  it("lists only persisted guides; reference guides are resolved separately", async () => {
     const list = await listSavedGuides();
     expect(Array.isArray(list)).toBe(true);
-    expect(list.length).toBeGreaterThanOrEqual(3);
+    expect(list.map((item) => item.slug)).toContain(testGuide.slug);
+    expect(list.map((item) => item.slug)).not.toContain("gmail-send-vs-modify");
+  });
 
-    const slugs = list.map((item) => item.slug);
-    expect(slugs).toContain("gmail-send-vs-modify");
-    expect(slugs).toContain("github-public-issues");
-    expect(slugs).toContain("slack-channel-bot");
+  it("audits persisted records idempotently", async () => {
+    const firstCount = await auditPersistedGuides();
+    const first = await getGuideBySlug("unsafe-live-guide");
+    const secondCount = await auditPersistedGuides();
+    const second = await getGuideBySlug("unsafe-live-guide");
 
-    const gmailSummary = list.find((item) => item.slug === "gmail-send-vs-modify");
-    expect(gmailSummary).toBeDefined();
-    expect(gmailSummary?.providerName).toBe("Google / Gmail");
-    expect(gmailSummary?.generationMode).toBe("golden-verified");
-    expect(gmailSummary?.completenessStatus).toBe("complete");
-    expect(gmailSummary?.generatedAt).toBeDefined();
+    expect(firstCount).toBeGreaterThan(0);
+    expect(secondCount).toBe(firstCount);
+    expect(second).toEqual(first);
   });
 });

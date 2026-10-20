@@ -30,7 +30,9 @@ function isTrustedOfficialCitation(citation: EvidenceCitation): boolean {
  * review provenance, so those values must stay absent rather than guessed.
  */
 export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
-  if (guide.generationMode !== "live-researched") {
+  // Curated reference guides are canonical source data. Generated and fallback
+  // records cross the same conservative boundary before persistence.
+  if (guide.generationMode === "golden-verified") {
     return ProviderGuideSchema.parse(guide);
   }
 
@@ -48,9 +50,16 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
 
   const variants = guide.variants.map((variant) => {
     const scopes = variant.scopes.flatMap((scope) => {
+      const normalizedScope = scope.scope.trim();
+      // Generic words such as "read" do not establish a named OAuth scope.
+      if (normalizedScope.length < 4) return [];
+      const scopePattern = new RegExp(
+        `(^|[^a-z0-9:_-])${normalizedScope.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^a-z0-9:_-])`,
+        "i",
+      );
       const citationIds = scope.citationIds.filter((id) => {
         const citation = citationById.get(id);
-        return Boolean(citation?.verbatimQuote?.toLowerCase().includes(scope.scope.toLowerCase()));
+        return Boolean(citation?.verbatimQuote && scopePattern.test(citation.verbatimQuote));
       });
       if (citationIds.length === 0) return [];
       return [{
