@@ -2,6 +2,15 @@
 
 AuthBench helps developers investigate how an integration authenticates, which documented permissions relate to a requested capability, and which provider-review questions remain unresolved. It favors explicit unknowns over unsupported claims.
 
+## Public links
+
+- Application: https://authbench.vercel.app
+- Source: https://github.com/goku54477/OAuth-GG
+- Reference examples: https://authbench.vercel.app/guides/github, https://authbench.vercel.app/guides/slack, https://authbench.vercel.app/guides/gmail
+- Live-researched examples: https://authbench.vercel.app/guides/linear, https://authbench.vercel.app/guides/hubspot
+- Validation record: [`docs/validation.md`](docs/validation.md)
+- Assignment evidence checklist: [`docs/submission-checklist.md`](docs/submission-checklist.md)
+
 ## Assignment alignment
 
 - Browse a tracked snapshot of 1,619 Composio integrations and their observed authentication metadata.
@@ -44,7 +53,7 @@ Local development can use a file-backed libSQL database and JSON fallback. Produ
 - `estimated`: an explicitly labeled estimate.
 - `unknown`: evidence is insufficient.
 
-The integrity normalizer allowlists official HTTPS evidence, rejects unknown citation IDs, removes unproven configuration and review claims, and keeps requested-capability coverage unknown unless the captured source establishes it. Partial guides are useful research records, not claims of completeness.
+The integrity normalizer allowlists official HTTPS evidence, rejects unknown citation IDs, and evaluates setup steps, scope names, and review claims independently. A source-backed field may remain; an unsupported field is removed or marked Unknown. Requested-capability coverage stays Unknown unless captured source text establishes the operation-to-permission connection. Partial guides are useful research records, not claims of completeness.
 
 ## Environment variables
 
@@ -88,5 +97,8 @@ npm run audit:guides
 
 - AuthBench does not register provider applications, supply credentials, submit reviews, or guarantee provider approval.
 - Provider policies change; generated dates and citations identify the evidence available to a guide.
-- Review timing, fees, audits, classifications, callbacks, and production requirements remain hidden or Unknown unless official evidence supports their applicability.
+- Review timing, fees, audits, classifications, callbacks, and production requirements remain hidden or Unknown unless official evidence supports their applicability. A cited review requirement is not a review-time estimate.
+- A generic capability such as `read` or `write` is not automatically a provider scope. Ask for a resource-level operation when exact coverage matters.
+- Existing records can be enriched only from retained official excerpts. Raw model drafts are deliberately not persisted, so discarded unsupported prose cannot be recovered after migration.
+- Official source text can be incomplete, conflicting, or provider-policy-specific. AuthBench preserves the uncertainty rather than inferring a universal setup path.
 - The repository includes deterministic fixtures and mocked generation checks. A paid live check is recorded only when it has actually run; see [the validation record](docs/validation.md).

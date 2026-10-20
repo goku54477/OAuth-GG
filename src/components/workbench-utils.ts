@@ -93,6 +93,12 @@ export function hasSubstantiveGuideComparison(guide: ProviderGuide): boolean {
   );
 }
 
+export function getGuideVariantSectionTitle(guide: ProviderGuide): string {
+  return guide.variants.length > 1
+    ? "Scope and review comparison"
+    : "Documented OAuth path";
+}
+
 export function getDocumentedScopes(guide: ProviderGuide) {
   const scopes = new Map<string, ProviderGuide["variants"][number]["scopes"][number]>();
   for (const scope of guide.variants.flatMap((variant) => variant.scopes)) {

@@ -319,6 +319,65 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     });
   });
 
+  it("keeps citation-backed setup and conditional review guidance without restoring estimates", () => {
+    const oauthCitation = {
+      id: "hubspot-oauth",
+      sourceUrl: "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/oauth/working-with-oauth",
+      sourceTitle: "Working with OAuth - HubSpot docs",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Create an OAuth app in your developer account. Add the redirect URL to your app settings before users authorize the app.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const marketplaceCitation = {
+      id: "hubspot-marketplace",
+      sourceUrl: "https://developers.hubspot.com/docs/apps/developer-platform/list-apps/apply-for-certification/certification-requirements",
+      sourceTitle: "HubSpot Marketplace certification requirements",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Apps submitted to the HubSpot Marketplace must meet the certification requirements before listing.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "hubspot-source-backed-guidance",
+      providerName: "HubSpot",
+      generationMode: "live-researched",
+      citations: [oauthCitation, marketplaceCitation],
+      variants: [{
+        ...githubPublicIssuesGuide.variants[0],
+        title: "OAuth app path",
+        recommendedAppType: "OAuth app",
+        estimatedReviewTimeline: "3 days",
+        securityAuditRequired: "Always required",
+      }],
+      registrationSteps: [],
+      distributionAndReviewChecklist: [{
+        claim: "Apps submitted to the HubSpot Marketplace must meet the certification requirements before listing.",
+        epistemicStatus: "source-supported",
+        citationIds: [marketplaceCitation.id],
+      }],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+
+    expect(normalized.registrationSteps).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: expect.stringMatching(/OAuth/i),
+        instructions: expect.stringContaining("Create an OAuth app"),
+        citationIds: [oauthCitation.id],
+      }),
+    ]));
+    expect(normalized.distributionAndReviewChecklist).toEqual([
+      expect.objectContaining({
+        claim: expect.stringContaining("HubSpot Marketplace"),
+        citationIds: [marketplaceCitation.id],
+      }),
+    ]);
+    expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
+    expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
+  });
+
   it("preserves source-supported status when citations are valid and present in allowedSourceUrls", () => {
     const allowedUrls = [
       "https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/choosing-permissions-for-a-github-app",
