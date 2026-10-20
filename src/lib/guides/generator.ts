@@ -34,6 +34,7 @@ export interface GuideGenerationDiagnostics {
     | "missing-api-key"
     | "provider-identity-unverified"
     | "no-official-evidence"
+    | "golden-guide"
     | "model-success"
     | "model-http-error"
     | "model-output-invalid";

@@ -3,60 +3,6 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { ProviderGuideSchema, type ProviderGuide } from "@/types/contracts";
 
-function sanitizePartialFallbackGuide(guide: ProviderGuide): ProviderGuide {
-  if (guide.generationMode !== "partial-fallback") return guide;
-
-  return ProviderGuideSchema.parse({
-    ...guide,
-    subtitle: "Provider-specific OAuth configuration could not be verified from trusted evidence.",
-    composioIntegration: {
-      ...guide.composioIntegration,
-      managedOAuthAvailable: false,
-      managedVsCustomVerdict: "Composio managed OAuth availability is unknown for this partial record.",
-      customAuthConfigSnippet: "",
-      composioRedirectUriHint: "",
-      epistemicStatus: "unknown",
-      citationIds: [],
-    },
-    variants: [{
-      variantId: `${guide.slug}-partial-evidence`,
-      title: "Partial evidence record",
-      summary: "No provider-specific OAuth application type, scope names, or configuration values are presented without trusted supporting evidence.",
-      recommendedAppType: "Unknown",
-      scopes: [],
-      approvalGateSummary: "Provider approval requirements are unknown and unverified.",
-      estimatedReviewTimeline: "Unknown",
-      securityAuditRequired: "Unknown",
-      pros: [],
-      cons: [],
-    }],
-    registrationSteps: [],
-    testingAndSandboxRules: [{
-      claim: "No provider-specific testing or sandbox rules were verified.",
-      epistemicStatus: "unknown",
-      citationIds: [],
-      notes: "Consult official provider documentation before implementation.",
-    }],
-    distributionAndReviewChecklist: [{
-      claim: "No provider-specific production review requirements were verified.",
-      epistemicStatus: "unknown",
-      citationIds: [],
-    }],
-    practicalObservations: [{
-      claim: "This partial record intentionally omits unverified OAuth configuration and permission claims.",
-      epistemicStatus: "unknown",
-      citationIds: [],
-    }],
-    explicitUnknowns: [
-      "Provider identity and official OAuth documentation",
-      "OAuth application type, callback URL, and client-credential requirements",
-      "Permission scopes and sensitivity classifications",
-      "Testing, review, and security-audit requirements",
-    ],
-    citations: [],
-  });
-}
-
 export const GMAIL_GUIDE_SEED: ProviderGuide = {
   slug: "gmail-send-vs-modify",
   providerName: "Google / Gmail",
@@ -1017,12 +963,12 @@ async function getClient(): Promise<Client | null> {
 /**
  * Saves or updates a ProviderGuide in the database, with automatic fallback.
  */
-export async function saveGuide(guide: ProviderGuide): Promise<void> {
+export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
   if (!guide || !guide.slug) {
     throw new Error("Invalid guide object or missing slug");
   }
 
-  const safeGuide = sanitizePartialFallbackGuide(guide);
+  const safeGuide = ProviderGuideSchema.parse(guide);
 
   // Update in-memory map
   inMemoryGuides.set(safeGuide.slug, safeGuide);
@@ -1066,6 +1012,7 @@ export async function saveGuide(guide: ProviderGuide): Promise<void> {
   } catch {
     // Graceful fallback: data is already preserved in JSON and in-memory
   }
+  return safeGuide;
 }
 
 /**
@@ -1084,7 +1031,7 @@ export async function getGuideBySlug(slug: string): Promise<ProviderGuide | null
         args: [normalizedSlug],
       });
       if (res.rows.length > 0 && res.rows[0].guide_json) {
-        return sanitizePartialFallbackGuide(ProviderGuideSchema.parse(JSON.parse(res.rows[0].guide_json as string)));
+        return ProviderGuideSchema.parse(JSON.parse(res.rows[0].guide_json as string));
       }
     }
   } catch {
@@ -1094,12 +1041,12 @@ export async function getGuideBySlug(slug: string): Promise<ProviderGuide | null
   // 2. Try JSON fallback file
   const fallbackRecords = loadFallbackFile();
   if (fallbackRecords[normalizedSlug]) {
-    return sanitizePartialFallbackGuide(fallbackRecords[normalizedSlug]);
+    return ProviderGuideSchema.parse(fallbackRecords[normalizedSlug]);
   }
 
   // 3. Try In-Memory Map
   if (inMemoryGuides.has(normalizedSlug)) {
-    return sanitizePartialFallbackGuide(inMemoryGuides.get(normalizedSlug)!);
+    return ProviderGuideSchema.parse(inMemoryGuides.get(normalizedSlug)!);
   }
 
   return null;

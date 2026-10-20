@@ -153,25 +153,28 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(nonexistent).toBeNull();
   });
 
-  it("sanitizes a legacy partial fallback before returning it", async () => {
-    const legacyFallback: ProviderGuide = {
+  it("round-trips a canonical partial guide without destroying verified metadata", async () => {
+    const partialGuide: ProviderGuide = {
       ...testGuide,
-      slug: "legacy-unsafe-fallback-test",
+      slug: "miro-partial-roundtrip-test",
       generationMode: "partial-fallback",
       completenessStatus: "partial",
       composioIntegration: {
         ...testGuide.composioIntegration,
-        customAuthConfigSnippet: "https://example.com/oauth/authorize",
-        composioRedirectUriHint: "https://backend.composio.dev/api/v1/auth-apps/addRepo/linear",
+        managedOAuthAvailable: true,
+        customAuthConfigSnippet: "",
+        composioRedirectUriHint: "",
       },
+      variants: [{ ...testGuide.variants[0], scopes: [] }],
+      registrationSteps: [],
     };
-    await saveGuide(legacyFallback);
+    const saved = await saveGuide(partialGuide);
 
-    const retrieved = await getGuideBySlug(legacyFallback.slug);
-    expect(retrieved?.composioIntegration.customAuthConfigSnippet).toBe("");
-    expect(retrieved?.composioIntegration.composioRedirectUriHint).toBe("");
-    expect(retrieved?.registrationSteps).toEqual([]);
-    expect(retrieved?.variants[0].scopes).toEqual([]);
+    const retrieved = await getGuideBySlug(partialGuide.slug);
+    expect(saved).toEqual(partialGuide);
+    expect(retrieved).toEqual(partialGuide);
+    expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
+    expect(retrieved?.citations).toEqual(partialGuide.citations);
   });
 
   it("should list saved guides including golden and newly saved guides", async () => {

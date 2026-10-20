@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 
 import { fetchLiveToolkitMetadata, getToolkitByQuery } from "@/lib/catalog";
 import { saveGuide } from "@/lib/db";
-import { generateOrResolveGuide, verifyAndAuditGuide } from "@/lib/guides";
-import { retrieveProviderEvidence } from "@/lib/research";
+import { generateOrResolveGuideWithDiagnostics } from "@/lib/guides";
+import { hasVerifiedProviderIdentity, retrieveProviderEvidence } from "@/lib/research";
 import { LiveResearchRequestSchema } from "@/types/contracts";
 
 export async function POST(request: Request) {
@@ -14,13 +14,33 @@ export async function POST(request: Request) {
     const catalogItem = await getToolkitByQuery(queryOrUrl);
     const liveMetadata = catalogItem ? await fetchLiveToolkitMetadata(catalogItem.slug) : null;
     const researchBundle = await retrieveProviderEvidence(parsed.data);
-    const generated = await generateOrResolveGuide({ queryOrUrl, capabilities, catalogItem: liveMetadata?.summary ?? catalogItem, researchBundle });
-    const allowedSourceUrls = researchBundle.documents
-      .filter((document) => document.citation.authorityType === "official-provider-docs")
-      .map((document) => document.citation.sourceUrl);
-    const guide = verifyAndAuditGuide(generated, [...allowedSourceUrls]);
-    await saveGuide(guide);
-    return NextResponse.json({ guide, redirectUrl: `/guides/${guide.slug}`, researchWarnings: researchBundle.warnings });
+    const resolvedCatalogItem = liveMetadata?.summary ?? catalogItem;
+    const providerIdentityVerified = hasVerifiedProviderIdentity(
+      resolvedCatalogItem,
+      researchBundle.documents,
+    );
+    if (!providerIdentityVerified) {
+      return NextResponse.json(
+        { error: "The provider could not be verified from catalog metadata or official documentation." },
+        { status: 422 },
+      );
+    }
+
+    const generated = await generateOrResolveGuideWithDiagnostics({
+      queryOrUrl,
+      capabilities,
+      catalogItem: resolvedCatalogItem,
+      providerIdentityVerified,
+      researchBundle,
+    });
+    console.info("[guide-investigation]", generated.diagnostics);
+    const guide = await saveGuide(generated.guide);
+    return NextResponse.json({
+      guide,
+      redirectUrl: `/guides/${guide.slug}`,
+      researchWarnings: researchBundle.warnings,
+      generationDiagnostics: generated.diagnostics,
+    });
   } catch {
     return NextResponse.json({ error: "Failed to investigate provider" }, { status: 500 });
   }
