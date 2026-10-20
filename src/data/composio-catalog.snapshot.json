@@ -1,0 +1,3142 @@
+[
+  {
+    "slug": "airtable",
+    "name": "Airtable",
+    "description": "Connect Airtable through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "amplitude",
+    "name": "Amplitude",
+    "description": "Connect Amplitude through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "apaleo",
+    "name": "Apaleo",
+    "description": "Connect Apaleo through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "asana",
+    "name": "Asana",
+    "description": "Connect Asana through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "ashby",
+    "name": "Ashby",
+    "description": "Connect Ashby through Composio.",
+    "categories": [
+      "HR"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "attio",
+    "name": "Attio",
+    "description": "Connect Attio through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "auth0",
+    "name": "Auth0",
+    "description": "Connect Auth0 through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "bamboohr",
+    "name": "BambooHR",
+    "description": "Connect BambooHR through Composio.",
+    "categories": [
+      "HR"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "basecamp",
+    "name": "Basecamp",
+    "description": "Connect Basecamp through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "bitbucket",
+    "name": "Bitbucket",
+    "description": "Connect Bitbucket through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "blackbaud",
+    "name": "Blackbaud",
+    "description": "Connect Blackbaud through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "boldsign",
+    "name": "BoldSign",
+    "description": "Connect BoldSign through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "box",
+    "name": "Box",
+    "description": "Connect Box through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "cal",
+    "name": "Cal.com",
+    "description": "Connect Cal.com through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "calendly",
+    "name": "Calendly",
+    "description": "Connect Calendly through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "canva",
+    "name": "Canva",
+    "description": "Connect Canva through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "capsule_crm",
+    "name": "Capsule CRM",
+    "description": "Connect Capsule CRM through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "clickup",
+    "name": "ClickUp",
+    "description": "Connect ClickUp through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "confluence",
+    "name": "Confluence",
+    "description": "Connect Confluence through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "contentful",
+    "name": "Contentful",
+    "description": "Connect Contentful through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "crowdin",
+    "name": "Crowdin",
+    "description": "Connect Crowdin through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "dart",
+    "name": "Dart",
+    "description": "Connect Dart through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "datadog",
+    "name": "Datadog",
+    "description": "Connect Datadog through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "daytona",
+    "name": "Daytona",
+    "description": "Connect Daytona through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "dialpad",
+    "name": "Dialpad",
+    "description": "Connect Dialpad through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "discord",
+    "name": "Discord",
+    "description": "Connect Discord through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "discordbot",
+    "name": "Discord Bot",
+    "description": "Connect Discord Bot through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "docusign",
+    "name": "DocuSign",
+    "description": "Connect DocuSign through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "dropbox",
+    "name": "Dropbox",
+    "description": "Connect Dropbox through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "dub",
+    "name": "Dub",
+    "description": "Connect Dub through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "dynamics365",
+    "name": "Dynamics 365",
+    "description": "Connect Dynamics 365 through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "eventbrite",
+    "name": "Eventbrite",
+    "description": "Connect Eventbrite through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "excel",
+    "name": "Excel",
+    "description": "Connect Excel through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "exist",
+    "name": "Exist",
+    "description": "Connect Exist through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "facebook",
+    "name": "Facebook",
+    "description": "Connect Facebook through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "fathom",
+    "name": "Fathom",
+    "description": "Connect Fathom through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "figma",
+    "name": "Figma",
+    "description": "Connect Figma through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "freeagent",
+    "name": "FreeAgent",
+    "description": "Connect FreeAgent through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "freshbooks",
+    "name": "FreshBooks",
+    "description": "Connect FreshBooks through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "github",
+    "name": "GitHub",
+    "description": "Connect GitHub through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0,
+    "goldenGuideSlug": "github-public-issues"
+  },
+  {
+    "slug": "gitlab",
+    "name": "GitLab",
+    "description": "Connect GitLab through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "gmail",
+    "name": "Gmail",
+    "description": "Connect Gmail through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0,
+    "goldenGuideSlug": "gmail-send-vs-modify"
+  },
+  {
+    "slug": "gong",
+    "name": "Gong",
+    "description": "Connect Gong through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "google_analytics",
+    "name": "Google Analytics",
+    "description": "Connect Google Analytics through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "google_classroom",
+    "name": "Google Classroom",
+    "description": "Connect Google Classroom through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "google_maps",
+    "name": "Google Maps",
+    "description": "Connect Google Maps through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "google_search_console",
+    "name": "Google Search Console",
+    "description": "Connect Google Search Console through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googleads",
+    "name": "Google Ads",
+    "description": "Connect Google Ads through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googlebigquery",
+    "name": "Google BigQuery",
+    "description": "Connect Google BigQuery through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googlecalendar",
+    "name": "Google Calendar",
+    "description": "Connect Google Calendar through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googledocs",
+    "name": "Google Docs",
+    "description": "Connect Google Docs through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googledrive",
+    "name": "Google Drive",
+    "description": "Connect Google Drive through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googlemeet",
+    "name": "Google Meet",
+    "description": "Connect Google Meet through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googlephotos",
+    "name": "Google Photos",
+    "description": "Connect Google Photos through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googlesheets",
+    "name": "Google Sheets",
+    "description": "Connect Google Sheets through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googleslides",
+    "name": "Google Slides",
+    "description": "Connect Google Slides through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googlesuper",
+    "name": "Google Super",
+    "description": "Connect Google Super through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "googletasks",
+    "name": "Google Tasks",
+    "description": "Connect Google Tasks through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "gorgias",
+    "name": "Gorgias",
+    "description": "Connect Gorgias through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "greenhouse",
+    "name": "Greenhouse",
+    "description": "Connect Greenhouse through Composio.",
+    "categories": [
+      "HR"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "gumroad",
+    "name": "Gumroad",
+    "description": "Connect Gumroad through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "harvest",
+    "name": "Harvest",
+    "description": "Connect Harvest through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "hubspot",
+    "name": "HubSpot",
+    "description": "Connect HubSpot through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "hugging_face",
+    "name": "Hugging Face",
+    "description": "Connect Hugging Face through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "instagram",
+    "name": "Instagram",
+    "description": "Connect Instagram through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "intercom",
+    "name": "Intercom",
+    "description": "Connect Intercom through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "jira",
+    "name": "Jira",
+    "description": "Connect Jira through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "kit",
+    "name": "Kit",
+    "description": "Connect Kit through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "klaviyo",
+    "name": "Klaviyo",
+    "description": "Connect Klaviyo through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "lever",
+    "name": "Lever",
+    "description": "Connect Lever through Composio.",
+    "categories": [
+      "HR"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "linear",
+    "name": "Linear",
+    "description": "Connect Linear through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "linkedin",
+    "name": "LinkedIn",
+    "description": "Connect LinkedIn through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "linkhut",
+    "name": "Linkhut",
+    "description": "Connect Linkhut through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "mailchimp",
+    "name": "Mailchimp",
+    "description": "Connect Mailchimp through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "microsoft_teams",
+    "name": "Microsoft Teams",
+    "description": "Connect Microsoft Teams through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "miro",
+    "name": "Miro",
+    "description": "Connect Miro through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "mixpanel",
+    "name": "Mixpanel",
+    "description": "Connect Mixpanel through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "monday",
+    "name": "Monday",
+    "description": "Connect Monday through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "moneybird",
+    "name": "Moneybird",
+    "description": "Connect Moneybird through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "mural",
+    "name": "Mural",
+    "description": "Connect Mural through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "netsuite",
+    "name": "NetSuite",
+    "description": "Connect NetSuite through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "notebook_lm",
+    "name": "NotebookLM",
+    "description": "Connect NotebookLM through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "notion",
+    "name": "Notion",
+    "description": "Connect Notion through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "okta",
+    "name": "Okta",
+    "description": "Connect Okta through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "omnisend",
+    "name": "Omnisend",
+    "description": "Connect Omnisend through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "one_drive",
+    "name": "OneDrive",
+    "description": "Connect OneDrive through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "outlook",
+    "name": "Outlook",
+    "description": "Connect Outlook through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "pagerduty",
+    "name": "PagerDuty",
+    "description": "Connect PagerDuty through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "pandadoc",
+    "name": "PandaDoc",
+    "description": "Connect PandaDoc through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "pinterest",
+    "name": "Pinterest",
+    "description": "Connect Pinterest through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "pinterest_ads",
+    "name": "Pinterest Ads",
+    "description": "Connect Pinterest Ads through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "pipedrive",
+    "name": "Pipedrive",
+    "description": "Connect Pipedrive through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "posthog",
+    "name": "PostHog",
+    "description": "Connect PostHog through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "prisma",
+    "name": "Prisma",
+    "description": "Connect Prisma through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "productboard",
+    "name": "Productboard",
+    "description": "Connect Productboard through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "pushbullet",
+    "name": "Pushbullet",
+    "description": "Connect Pushbullet through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "quickbooks",
+    "name": "QuickBooks",
+    "description": "Connect QuickBooks through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "reddit",
+    "name": "Reddit",
+    "description": "Connect Reddit through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "reddit_ads",
+    "name": "Reddit Ads",
+    "description": "Connect Reddit Ads through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "roam",
+    "name": "Roam",
+    "description": "Connect Roam through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "salesforce",
+    "name": "Salesforce",
+    "description": "Connect Salesforce through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "sendgrid",
+    "name": "SendGrid",
+    "description": "Connect SendGrid through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "api_key"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "api_key"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "sentry",
+    "name": "Sentry",
+    "description": "Connect Sentry through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "servicem8",
+    "name": "ServiceM8",
+    "description": "Connect ServiceM8 through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "share_point",
+    "name": "SharePoint",
+    "description": "Connect SharePoint through Composio.",
+    "categories": [
+      "Files & Documents"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "shippo",
+    "name": "Shippo",
+    "description": "Connect Shippo through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "shopify",
+    "name": "Shopify",
+    "description": "Connect Shopify through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "slack",
+    "name": "Slack",
+    "description": "Connect Slack through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0,
+    "goldenGuideSlug": "slack-channel-bot"
+  },
+  {
+    "slug": "slackbot",
+    "name": "Slack Bot",
+    "description": "Connect Slack Bot through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "snowflake",
+    "name": "Snowflake",
+    "description": "Connect Snowflake through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "splitwise",
+    "name": "Splitwise",
+    "description": "Connect Splitwise through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "square",
+    "name": "Square",
+    "description": "Connect Square through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "stack_exchange",
+    "name": "Stack Exchange",
+    "description": "Connect Stack Exchange through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "stripe",
+    "name": "Stripe",
+    "description": "Connect Stripe through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "supabase",
+    "name": "Supabase",
+    "description": "Connect Supabase through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "surveymonkey",
+    "name": "SurveyMonkey",
+    "description": "Connect SurveyMonkey through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "ticketmaster",
+    "name": "Ticketmaster",
+    "description": "Connect Ticketmaster through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "ticktick",
+    "name": "TickTick",
+    "description": "Connect TickTick through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "tiktok_ads",
+    "name": "TikTok Ads",
+    "description": "Connect TikTok Ads through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "timely",
+    "name": "Timely",
+    "description": "Connect Timely through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "todoist",
+    "name": "Todoist",
+    "description": "Connect Todoist through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "trello",
+    "name": "Trello",
+    "description": "Connect Trello through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "twilio",
+    "name": "Twilio",
+    "description": "Connect Twilio through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "basic"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "username",
+      "password"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "twitch",
+    "name": "Twitch",
+    "description": "Connect Twitch through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "typeform",
+    "name": "Typeform",
+    "description": "Connect Typeform through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "wakatime",
+    "name": "WakaTime",
+    "description": "Connect WakaTime through Composio.",
+    "categories": [
+      "Developer Tools"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "webex",
+    "name": "Webex",
+    "description": "Connect Webex through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "webflow",
+    "name": "Webflow",
+    "description": "Connect Webflow through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "whatsapp",
+    "name": "WhatsApp",
+    "description": "Connect WhatsApp through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "workday",
+    "name": "Workday",
+    "description": "Connect Workday through Composio.",
+    "categories": [
+      "HR"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "wrike",
+    "name": "Wrike",
+    "description": "Connect Wrike through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "xero",
+    "name": "Xero",
+    "description": "Connect Xero through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [],
+    "hasManagedOAuth": false,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "yandex",
+    "name": "Yandex",
+    "description": "Connect Yandex through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "ynab",
+    "name": "YNAB",
+    "description": "Connect YNAB through Composio.",
+    "categories": [
+      "Finance"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "youtube",
+    "name": "YouTube",
+    "description": "Connect YouTube through Composio.",
+    "categories": [
+      "Marketing"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zendesk",
+    "name": "Zendesk",
+    "description": "Connect Zendesk through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zeplin",
+    "name": "Zeplin",
+    "description": "Connect Zeplin through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho",
+    "name": "Zoho",
+    "description": "Connect Zoho through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho_bigin",
+    "name": "Zoho Bigin",
+    "description": "Connect Zoho Bigin through Composio.",
+    "categories": [
+      "CRM"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho_books",
+    "name": "Zoho Books",
+    "description": "Connect Zoho Books through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho_desk",
+    "name": "Zoho Desk",
+    "description": "Connect Zoho Desk through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho_inventory",
+    "name": "Zoho Inventory",
+    "description": "Connect Zoho Inventory through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho_invoice",
+    "name": "Zoho Invoice",
+    "description": "Connect Zoho Invoice through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoho_mail",
+    "name": "Zoho Mail",
+    "description": "Connect Zoho Mail through Composio.",
+    "categories": [
+      "Productivity"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  },
+  {
+    "slug": "zoom",
+    "name": "Zoom",
+    "description": "Connect Zoom through Composio.",
+    "categories": [
+      "Communication"
+    ],
+    "authSchemes": [
+      "oauth2"
+    ],
+    "composioManagedAuthSchemes": [
+      "oauth2"
+    ],
+    "hasManagedOAuth": true,
+    "requiresCustomAppForProduction": true,
+    "requiredAuthCreationFields": [
+      "client_id",
+      "client_secret"
+    ],
+    "toolsCount": 0,
+    "triggersCount": 0
+  }
+]
