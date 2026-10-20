@@ -248,6 +248,44 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(markdown).toContain("Create a new OAuth2 Application");
   });
 
+  it("rehydrates a legacy generic-link record from retained official excerpts", async () => {
+    const legacyGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "hubspot-legacy-link-record",
+      providerName: "HubSpot",
+      citations: [{
+        ...testGuide.citations[0],
+        id: "hubspot-docs",
+        sourceUrl: "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/oauth/working-with-oauth",
+        verbatimQuote: "Create an OAuth app in your developer account. Add the redirect URL to your app settings before users authorize the app. Apps submitted to the HubSpot Marketplace must meet certification requirements before listing.",
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Consult official provider documentation",
+        instructions: "Working with OAuth - HubSpot docs",
+        citationIds: ["hubspot-docs"],
+      }],
+      distributionAndReviewChecklist: [],
+    };
+    const existing = fs.existsSync(fallbackPath)
+      ? JSON.parse(fs.readFileSync(fallbackPath, "utf-8"))
+      : {};
+    fs.writeFileSync(fallbackPath, JSON.stringify({ ...existing, [legacyGuide.slug]: legacyGuide }));
+
+    await auditPersistedGuides();
+    const migrated = await getGuideBySlug(legacyGuide.slug);
+    const markdown = guideToMarkdown(migrated!);
+
+    expect(migrated?.registrationSteps).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        instructions: expect.stringContaining("Create an OAuth app"),
+        citationIds: ["hubspot-docs"],
+      }),
+    ]));
+    expect(migrated?.distributionAndReviewChecklist[0]?.claim).toContain("HubSpot Marketplace");
+    expect(markdown).toContain("Create an OAuth app");
+  });
+
   it("lists only persisted guides; reference guides are resolved separately", async () => {
     const list = await listSavedGuides();
     expect(Array.isArray(list)).toBe(true);

@@ -12,7 +12,7 @@ This file distinguishes deterministic verification from external paid acceptance
 
 Validated implementation commit: `b2fdeb3` (2026-10-20).
 
-- `npx vitest run`: 117 tests passed across 8 files.
+- `npx vitest run`: 119 tests passed across 8 files at the recorded validation commit. Re-run after every submitted change.
 - `npx tsc --noEmit --incremental false`: zero errors.
 - `npm audit --omit=dev --audit-level=high`: zero critical/high production advisories; five low advisories remain in the intentionally unchanged AI SDK major line.
 - `npm run build`: Next.js 15.5.28 production build completed successfully.
@@ -21,7 +21,7 @@ Validated implementation commit: `b2fdeb3` (2026-10-20).
 
 ## Outside-catalog acceptance
 
-Status: **Executed on 2026-10-20 — successful live completion recorded.**
+Status: **Executed on 2026-10-20 — model invocation completed; evidence result remained partial.**
 
 Planned request, without credentials:
 
@@ -50,7 +50,7 @@ The initial 401 was traced to a stale process-level `OPENAI_API_KEY` inherited b
 
 ## Additional live acceptance: HubSpot
 
-Status: **Executed on 2026-10-20 — successful live completion recorded.**
+Status: **Executed on 2026-10-20 — model invocation completed; evidence result remained partial.**
 
 Request, without credentials:
 
@@ -65,6 +65,6 @@ Request, without credentials:
 Observed result:
 
 - Catalog identity resolution matched HubSpot and direct official-document retrieval produced one citation with no Exa discovery.
-- One `gpt-5-nano` attempt completed successfully with `generationMode: live-researched`.
+- One `gpt-5-nano` attempt completed with `generationMode: live-researched`; that status means a model draft was returned, not that requested capability coverage was proven.
 - The canonical persisted guide is deliberately `partial`: this specific page does not explicitly establish the requested `read` permission. It records that limitation as an explicit unknown rather than claiming sufficient access.
 - POST, persistence, and GET resolved to the same guide. The rendered route exposes the supplied official documentation link, requested capability, citation, and explicit unknowns, without a configuration snippet, callback value, secret-like content, fictional domain, fee, timeline, or audit claim.
