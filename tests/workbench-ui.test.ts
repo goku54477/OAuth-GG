@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   getVisibleCatalogItems,
   formatGuideDate,
+  getCitationSourceLabel,
+  getMissingQuoteLabel,
   guideToMarkdown,
   normalizeWorkbenchTab,
   readGuideRedirect,
@@ -40,10 +42,18 @@ const guide: ProviderGuide = {
       cons: ["Review requirements remain unknown"],
     },
   ],
-  registrationSteps: [],
-  testingAndSandboxRules: [],
-  distributionAndReviewChecklist: [],
-  practicalObservations: [],
+  registrationSteps: [{
+    stepNumber: 1,
+    title: "Register OAuth app",
+    consolePath: "Stripe Dashboard > Connect",
+    instructions: "Create the application and record its client ID.",
+    criticalConfigValues: [{ label: "Redirect URI", value: "https://example.com/callback" }],
+    epistemicStatus: "source-supported",
+    citationIds: ["stripe-docs"],
+  }],
+  testingAndSandboxRules: [{ claim: "Use test mode during development.", epistemicStatus: "source-supported", citationIds: ["stripe-docs"] }],
+  distributionAndReviewChecklist: [{ claim: "Confirm the production redirect URI.", epistemicStatus: "observed", citationIds: [] }],
+  practicalObservations: [{ claim: "Keep permissions narrow.", epistemicStatus: "observed", citationIds: [] }],
   explicitUnknowns: ["Production approval timeline"],
   citations: [
     {
@@ -82,6 +92,13 @@ describe("workbench UI trust boundaries", () => {
     expect(markdown).toContain("Request only required permissions.");
     expect(markdown).toContain("Production approval timeline");
     expect(markdown).toContain("https://docs.stripe.com/connect/oauth-reference");
+    expect(markdown).toContain("https://example.com/callback");
+    expect(markdown).toContain("Small permission boundary");
+    expect(markdown).toContain("Review requirements remain unknown");
+    expect(markdown).toContain("Register OAuth app");
+    expect(markdown).toContain("Use test mode during development.");
+    expect(markdown).toContain("Confirm the production redirect URI.");
+    expect(markdown).toContain("Keep permissions narrow.");
     expect(markdown).not.toContain("$3,000");
     expect(markdown).not.toContain("CASA Tier 2 & Tier 3 Validated");
     expect(markdown).not.toContain("authbench/scope-guard-action");
@@ -97,5 +114,12 @@ describe("workbench UI trust boundaries", () => {
 
   it("formats generated dates deterministically for server and browser rendering", () => {
     expect(formatGuideDate("2026-10-20T23:30:00.000Z")).toBe("2026-10-20");
+  });
+
+  it("labels provenance without overstating source authority or quote verification", () => {
+    expect(getCitationSourceLabel("official-provider-docs")).toBe("Official provider source");
+    expect(getCitationSourceLabel("secondary-technical")).toBe("Secondary technical source");
+    expect(getCitationSourceLabel("practical-inspection")).toBe("Practical inspection source");
+    expect(getMissingQuoteLabel()).toBe("No verbatim quote captured for this citation.");
   });
 });
