@@ -92,8 +92,11 @@ function citationDerivedReviewClaims(citations: EvidenceCitation[]): ClaimItem[]
 }
 
 function documentedAppType(citations: EvidenceCitation[]): string | undefined {
-  return citations.some((citation) => /oauth2? application/i.test(citation.verbatimQuote ?? ""))
-    ? "OAuth2 Application"
+  if (citations.some((citation) => /oauth2? application/i.test(citation.verbatimQuote ?? ""))) {
+    return "OAuth2 Application";
+  }
+  return citations.some((citation) => /oauth app/i.test(citation.verbatimQuote ?? ""))
+    ? "OAuth app"
     : undefined;
 }
 

@@ -30,6 +30,7 @@ import {
   getDocumentedScopes,
   getGuideGenerationLabel,
   getManagedOAuthLabel,
+  getGuideVariantSectionTitle,
   guideToMarkdown,
   hasSubstantiveGuideComparison,
 } from "@/components/workbench-utils";
@@ -391,7 +392,7 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
                       <Layers3 className="h-3.5 w-3.5" /> Capability variants
                     </p>
                     <h2 className="mt-3 text-lg font-semibold text-white">
-                      Scope and review comparison
+                      {getGuideVariantSectionTitle(guide)}
                     </h2>
                   </div>
                   <span className="font-mono text-xs text-zinc-600">

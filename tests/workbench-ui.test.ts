@@ -7,6 +7,7 @@ import {
   getMissingQuoteLabel,
   getManagedOAuthLabel,
   getGuideGenerationLabel,
+  getGuideVariantSectionTitle,
   getDocumentedScopes,
   getCatalogGuideAction,
   getCatalogSegmentItems,
@@ -248,6 +249,21 @@ describe("workbench UI trust boundaries", () => {
     expect(markdown).toContain("## Documented provider permissions");
     expect(markdown).toContain("documented:scope");
     expect(markdown).toContain("citations: stripe-docs");
+  });
+
+  it("does not call a single supported path a comparison", () => {
+    const singlePath: ProviderGuide = {
+      ...guide,
+      variants: [guide.variants[0]],
+    };
+
+    const comparison: ProviderGuide = {
+      ...guide,
+      variants: [guide.variants[0], { ...guide.variants[0], variantId: "second" }],
+    };
+
+    expect(getGuideVariantSectionTitle(singlePath)).toBe("Documented OAuth path");
+    expect(getGuideVariantSectionTitle(comparison)).toBe("Scope and review comparison");
   });
 
   it("deduplicates documented permissions repeated across variants", () => {
