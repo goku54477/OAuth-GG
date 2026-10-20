@@ -24,6 +24,12 @@ import {
 
 interface WorkbenchClientProps {
   initialToolkits: ComposioToolkitSummary[];
+  catalogStats: {
+    totalToolkits: number;
+    managedOAuthCount: number;
+    customOnlyCount: number;
+    categories: string[];
+  };
   savedGuides: Array<
     Pick<
       ProviderGuide,
@@ -62,6 +68,7 @@ const INVESTIGATION_STEPS = [
 
 export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
   initialToolkits,
+  catalogStats,
   savedGuides,
 }) => {
   const router = useRouter();
@@ -176,7 +183,7 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
           <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
             <div className="hidden sm:flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Production Catalog (120+ Toolkits)</span>
+              <span>Production Catalog ({catalogStats.totalToolkits} Toolkits)</span>
             </div>
           </div>
         </div>
@@ -195,7 +202,7 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
               Developer OAuth Workbench
             </h1>
             <p className="text-slate-400 font-sans text-sm sm:text-base max-w-2xl leading-relaxed">
-              Investigate OAuth permissions, CASA Tier 2/3 review friction, and Composio multi-tenant authentication wiring across 120+ platforms.
+              Investigate OAuth permissions, CASA Tier 2/3 review friction, and Composio multi-tenant authentication wiring across {catalogStats.totalToolkits} platforms.
             </p>
           </div>
 
@@ -558,7 +565,7 @@ export const WorkbenchClient: React.FC<WorkbenchClientProps> = ({
             <span>•</span>
             <span>CASA Tier 2/3 Validated</span>
             <span>•</span>
-            <span>120+ Composio Toolkits</span>
+            <span>{catalogStats.totalToolkits} Composio Toolkits</span>
           </div>
           <div>© 2026 Developer OAuth & App-Review Workbench</div>
         </div>

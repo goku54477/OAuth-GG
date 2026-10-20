@@ -1,32 +1,14 @@
 import { NextResponse } from "next/server";
-import { getGuideBySlug, GOLDEN_GUIDES_SEED, saveGuide } from "@/lib/db";
+import { getGuideBySlug, saveGuide } from "@/lib/db";
+import { getGoldenGuideBySlug } from "@/lib/guides";
 
-export async function GET(
-  request: Request,
-  props: { params: Promise<{ slug: string }> }
-) {
+export async function GET(_request: Request, props: { params: Promise<{ slug: string }> }) {
   const { slug } = await props.params;
-  if (!slug) {
-    return NextResponse.json({ error: "Missing slug parameter" }, { status: 400 });
-  }
-
   const normalized = slug.trim().toLowerCase();
-
-  // 1. Try DB / Fallback
   let guide = await getGuideBySlug(normalized);
-
-  // 2. If not found in DB, check golden guides seed directly
-  if (!guide && GOLDEN_GUIDES_SEED[normalized]) {
-    guide = GOLDEN_GUIDES_SEED[normalized];
-    await saveGuide(guide);
-  }
-
   if (!guide) {
-    return NextResponse.json(
-      { error: "Guide not found", slug: normalized },
-      { status: 404 }
-    );
+    guide = getGoldenGuideBySlug(normalized);
+    if (guide) await saveGuide(guide);
   }
-
-  return NextResponse.json({ guide });
+  return guide ? NextResponse.json({ guide }) : NextResponse.json({ error: "Guide not found", slug: normalized }, { status: 404 });
 }
