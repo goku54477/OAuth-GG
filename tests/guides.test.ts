@@ -387,7 +387,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
   });
 
-  it("derives explicit setup instructions without treating titles or review status as setup", () => {
+  it("keeps integration-directory submission guidance out of OAuth configuration and review timing unknown", () => {
     const trelloCitation = {
       id: "trello-integration-submission",
       sourceUrl: "https://developers.trello.com/docs/submitting-your-integration",
@@ -430,18 +430,70 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
 
     const normalized = normalizeGuideForEvidence(guide);
 
-    expect(normalized.registrationSteps).toEqual([
+    expect(normalized.registrationSteps).toEqual([]);
+    expect(normalized.distributionAndReviewChecklist).toEqual([
       expect.objectContaining({
-        instructions: "To submit your app, please complete the form at go.trello.com/dev-support.",
+        claim: "To submit your app, please complete the form at go.trello.com/dev-support.",
         citationIds: [trelloCitation.id],
       }),
     ]);
-    expect(normalized.registrationSteps[0]?.instructions).not.toContain("After you've submitted");
-    expect(normalized.registrationSteps[0]?.instructions).not.toBe("Submit Your Integration");
+    expect(normalized.distributionAndReviewChecklist[0]?.claim).not.toContain("few days");
     expect(normalized.variants[0].scopes).toEqual([]);
     expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
     expect(normalized.explicitUnknowns.join(" ")).toMatch(/official evidence/i);
+  });
+
+  it("derives only OAuth-relevant registration instructions from mixed official evidence", () => {
+    const oauthCitation = {
+      id: "airtable-oauth",
+      sourceUrl: "https://airtable.com/developers/web/guides/oauth-integrations",
+      sourceTitle: "OAuth integrations",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: [
+        "Click the Register new OAuth integration button to create a new OAuth integration.",
+        "Give your integration a unique name and register a valid redirect URL and click Register integration.",
+      ].join(" "),
+      epistemicStatus: "source-supported" as const,
+    };
+    const unrelatedCitation = {
+      id: "airtable-extension-review",
+      sourceUrl: "https://airtable.com/developers/extensions/guides/app-review-process",
+      sourceTitle: "App review process",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Create new releases and submissions for custom extensions via the Blocks CLI. The review process usually takes a few days.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const scopeCitation = {
+      id: "airtable-scope-resource",
+      sourceUrl: "https://airtable.com/developers/web/api/scopes",
+      sourceTitle: "Scopes",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Add all resources - Grants the token access to all workspaces and bases available to the user.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "airtable",
+      providerName: "Airtable",
+      generationMode: "live-researched",
+      citations: [oauthCitation, unrelatedCitation, scopeCitation],
+      registrationSteps: [],
+      distributionAndReviewChecklist: [],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+    const setup = normalized.registrationSteps.map((step) => step.instructions).join(" ");
+
+    expect(setup).toContain("Register new OAuth integration");
+    expect(setup).toContain("valid redirect URL");
+    expect(setup).not.toContain("Blocks CLI");
+    expect(setup).not.toContain("Add all resources");
+    expect(normalized.distributionAndReviewChecklist.map((item) => item.claim).join(" ")).not.toContain("few days");
+    expect(normalized.variants.every((variant) => variant.estimatedReviewTimeline === "Unknown")).toBe(true);
   });
 
   it("preserves source-supported status when citations are valid and present in allowedSourceUrls", () => {
