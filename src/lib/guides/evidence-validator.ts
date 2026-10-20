@@ -16,6 +16,8 @@ export interface AuditResult {
 }
 
 const COVERAGE_UNKNOWN = "Requested capability coverage";
+const COVERAGE_UNKNOWN_REASON = "Captured official evidence does not map requested operations to named provider permissions.";
+const SETUP_ACTION = "(?:create|register|configure|add|set|specify|select|enable|generate|use|request|fill(?:\\s+out)?|complete|submit)";
 
 function normalizedText(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9:]+/g, " ").trim().replace(/\s+/g, " ");
@@ -47,13 +49,17 @@ function sourceSentences(citation: EvidenceCitation): string[] {
 function isActionableSetupInstruction(sentence: string): boolean {
   const value = sentence.trim();
   if (value.startsWith("#") || /\|\s*description\s*\|/i.test(value)) return false;
-  return /^(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(value)
-    || /^(when|after) you\b/i.test(value)
-    || /\b(need|must|will need)\s+to\s+(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(value);
+  return new RegExp(`^(?:\\d+\\.\\s*)?${SETUP_ACTION}\\b`, "i").test(value)
+    || new RegExp(`^to\\s+${SETUP_ACTION}\\b`, "i").test(value)
+    || new RegExp(`^when\\s+you\\s+${SETUP_ACTION}\\b.*\\byou\\s+can\\s+${SETUP_ACTION}\\b`, "i").test(value)
+    || new RegExp(`\\b(?:need|must|will need|you'll need)\\s+to\\s+${SETUP_ACTION}\\b`, "i").test(value);
 }
 
 function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep | undefined {
-  const instruction = sourceSentences(citation).find(isActionableSetupInstruction);
+  const candidates = sourceSentences(citation).filter(isActionableSetupInstruction);
+  const instruction = candidates.find((candidate) => /\bplease\b|https?:\/\//i.test(candidate))
+    ?? candidates.find((candidate) => candidate.length > 40)
+    ?? candidates[0];
   if (!instruction) return undefined;
 
   return {
@@ -207,6 +213,7 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
 
   const explicitUnknowns = [
     COVERAGE_UNKNOWN,
+    COVERAGE_UNKNOWN_REASON,
     "Provider review, audit, and configuration requirements",
   ];
   const hasCatalogMetadata = guide.composioIntegration.epistemicStatus !== "unknown";
