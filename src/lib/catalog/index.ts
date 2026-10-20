@@ -54,7 +54,9 @@ export async function getToolkitBySlug(
   return toolkit ? cloneToolkit(toolkit) : null;
 }
 
-const GENERIC_HOST_LABELS = new Set(["www", "api", "app", "docs", "developer", "developers", "com", "net", "org", "io"]);
+function isHostOrSubdomain(hostname: string, domain: string): boolean {
+  return hostname === domain || hostname.endsWith(`.${domain}`);
+}
 
 /** Resolve an exact catalog slug from a provider name or documentation URL. */
 export async function getToolkitByQuery(queryOrUrl: string): Promise<ComposioToolkitSummary | null> {
@@ -64,16 +66,16 @@ export async function getToolkitByQuery(queryOrUrl: string): Promise<ComposioToo
 
   try {
     const hostname = new URL(query).hostname.replace(/^www\./, "");
-    const known = hostname.includes("github.com") ? "github"
-      : hostname.includes("slack.com") ? "slack"
-      : hostname.includes("google.com") || hostname.includes("gmail.com") ? "gmail"
+    const known = isHostOrSubdomain(hostname, "github.com") ? "github"
+      : isHostOrSubdomain(hostname, "slack.com") ? "slack"
+      : isHostOrSubdomain(hostname, "google.com") || isHostOrSubdomain(hostname, "gmail.com") ? "gmail"
       : null;
     if (known && bySlug.has(known)) return cloneToolkit(bySlug.get(known)!);
 
-    for (const label of hostname.split(".").filter((label) => !GENERIC_HOST_LABELS.has(label))) {
-      const toolkit = bySlug.get(label);
-      if (toolkit) return cloneToolkit(toolkit);
-    }
+    const labels = hostname.split(".");
+    const registrableLabel = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
+    const toolkit = bySlug.get(registrableLabel);
+    if (toolkit) return cloneToolkit(toolkit);
   } catch {
     // Non-URL queries are only accepted as exact catalog slugs.
   }
