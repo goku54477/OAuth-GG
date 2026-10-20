@@ -165,6 +165,34 @@ describe("HTML extraction", () => {
     expect((rejection as Error).message).toMatch(/timed out/i);
   });
 
+  it("rejects more than three redirects", async () => {
+    const lookup = vi.fn().mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    const fetchImpl = vi.fn().mockImplementation((_url: URL, init: RequestInit) => {
+      expect(init.redirect).toBe("manual");
+      return Promise.resolve(
+        new Response(null, { status: 302, headers: { location: "/next" } }),
+      );
+    });
+
+    await expect(
+      fetchHtmlDocument("https://docs.example.com/start", { lookup, fetch: fetchImpl }),
+    ).rejects.toThrow(/too many redirects/i);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
+  it("rejects a streamed body that exceeds two MiB without a content-length header", async () => {
+    const lookup = vi.fn().mockResolvedValue([{ address: "93.184.216.34", family: 4 }]);
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(new Uint8Array(2 * 1024 * 1024 + 1), {
+        headers: { "content-type": "text/html" },
+      }),
+    );
+
+    await expect(
+      fetchHtmlDocument("https://docs.example.com/oauth", { lookup, fetch: fetchImpl }),
+    ).rejects.toThrow(/large/i);
+  });
+
   it.each([
     ["non-HTML content", new Response("data", { headers: { "content-type": "application/json" } }), /HTML/i],
     [
@@ -295,6 +323,21 @@ describe("retrieveProviderEvidence", () => {
       degradedMode: true,
     });
     expect(result.warnings.join(" ")).toMatch(/EXA_API_KEY/);
+  });
+
+  it("returns an empty degraded bundle when Exa is unreachable", async () => {
+    vi.stubEnv("EXA_API_KEY", "configured-key");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network unavailable")));
+
+    const result = await retrieveProviderEvidence({
+      queryOrUrl: "Acme",
+      capabilities: ["read"],
+      forceRefresh: false,
+    });
+
+    expect(result.documents).toEqual([]);
+    expect(result.degradedMode).toBe(true);
+    expect(result.warnings.join(" ")).toMatch(/discovery failed/i);
   });
 
   it("fetches a valid HTTPS URL directly without calling Exa", async () => {
