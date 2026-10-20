@@ -7,10 +7,44 @@ import {
   ProviderGuideSchema,
 } from "@/types/contracts";
 
+const GeneratedGuideDraftSchema = ProviderGuideSchema.omit({
+  slug: true,
+  providerName: true,
+  toolkitSlug: true,
+  generatedAt: true,
+  generationMode: true,
+  completenessStatus: true,
+  citations: true,
+  composioIntegration: true,
+}).extend({
+  composioIntegration: ProviderGuideSchema.shape.composioIntegration.omit({
+    managedOAuthAvailable: true,
+    epistemicStatus: true,
+  }),
+});
+
+export interface GuideGenerationDiagnostics {
+  providerMatched: boolean;
+  researchDocumentCount: number;
+  officialDocumentCount: number;
+  researchDegraded: boolean;
+  researchWarningCount: number;
+  modelAttempted: boolean;
+  generationOutcome:
+    | "missing-api-key"
+    | "provider-identity-unverified"
+    | "no-official-evidence"
+    | "model-success"
+    | "model-http-error"
+    | "model-output-invalid";
+  failureCategory?: string;
+}
+
 export interface GenerateGuideInput {
   queryOrUrl: string;
   capabilities?: string[];
   catalogItem?: ComposioToolkitSummary | null;
+  providerIdentityVerified?: boolean;
   researchBundle?: {
     providerQuery: string;
     targetUrl?: string;
@@ -36,7 +70,13 @@ function slugify(text: string): string {
 
 function deriveProviderName(queryOrUrl: string, catalogItem?: ComposioToolkitSummary | null): string {
   if (catalogItem?.name) return catalogItem.name;
-  const clean = queryOrUrl.replace(/https?:\/\//g, "").split("/")[0].split(".")[0];
+  let clean = queryOrUrl.trim();
+  try {
+    const labels = new URL(queryOrUrl).hostname.replace(/^www\./, "").split(".");
+    clean = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
+  } catch {
+    // Provider name already comes from user query.
+  }
   return clean.charAt(0).toUpperCase() + clean.slice(1);
 }
 
@@ -56,7 +96,9 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
   const slug = catalogItem?.slug || slugify(queryOrUrl) || "unknown-provider";
   const now = new Date().toISOString();
 
-  const citations: EvidenceCitation[] = (catalogItem ? researchBundle?.documents || [] : [])
+  const citations: EvidenceCitation[] = (
+    catalogItem || input.providerIdentityVerified ? researchBundle?.documents || [] : []
+  )
     .filter((document) => document.citation.authorityType === "official-provider-docs")
     .map((document) => document.citation);
 
@@ -134,15 +176,46 @@ export function buildPartialFallbackGuide(input: GenerateGuideInput): ProviderGu
  * and verified official documentation exists in the research bundle; otherwise falls back to an evidence-limited guide.
  */
 export async function generateStructuredGuide(input: GenerateGuideInput): Promise<ProviderGuide> {
+  return (await generateStructuredGuideWithDiagnostics(input)).guide;
+}
+
+export async function generateStructuredGuideWithDiagnostics(
+  input: GenerateGuideInput,
+): Promise<{ guide: ProviderGuide; diagnostics: GuideGenerationDiagnostics }> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
-  const docs = (input.researchBundle?.documents || []).filter(
+  const allDocuments = input.researchBundle?.documents || [];
+  const docs = allDocuments.filter(
     (document) => document.citation.authorityType === "official-provider-docs",
   );
-  const hasOfficialDocs = docs.length > 0;
+  const baseDiagnostics = {
+    providerMatched: Boolean(input.catalogItem),
+    researchDocumentCount: allDocuments.length,
+    officialDocumentCount: docs.length,
+    researchDegraded: input.researchBundle?.degradedMode ?? true,
+    researchWarningCount: input.researchBundle?.warnings.length ?? 0,
+  };
 
-  // Warnings may coexist with usable official evidence; only missing key/evidence blocks synthesis.
-  if (!apiKey || !input.catalogItem || !hasOfficialDocs) {
-    return buildPartialFallbackGuide(input);
+  if (!apiKey) {
+    return {
+      guide: buildPartialFallbackGuide(input),
+      diagnostics: { ...baseDiagnostics, modelAttempted: false, generationOutcome: "missing-api-key" },
+    };
+  }
+  if (!input.catalogItem && !input.providerIdentityVerified) {
+    return {
+      guide: buildPartialFallbackGuide(input),
+      diagnostics: {
+        ...baseDiagnostics,
+        modelAttempted: false,
+        generationOutcome: "provider-identity-unverified",
+      },
+    };
+  }
+  if (docs.length === 0) {
+    return {
+      guide: buildPartialFallbackGuide(input),
+      diagnostics: { ...baseDiagnostics, modelAttempted: false, generationOutcome: "no-official-evidence" },
+    };
   }
 
   try {
@@ -158,6 +231,7 @@ Research Documents:
 ${docs
   .map(
     (d, i) => `--- DOCUMENT ${i + 1} (${d.citation.sourceUrl}) [${d.citation.authorityType}] ---
+Citation ID: ${d.citation.id}
 Title: ${d.citation.sourceTitle}
 Content:
 ${d.cleanMarkdown.slice(0, 3000)}
@@ -172,27 +246,53 @@ CRITICAL SECURITY REQUIREMENTS:
 2. For every scope, correctly classify as non-sensitive, sensitive, restricted, granular-bot, coarse-repo, or unknown.
 3. Identify external review gates and whether third-party security audits (e.g., CASA Tier AL1/AL2) are triggered.
 4. Provide concrete step-by-step console instructions with criticalConfigValues.
-5. Provide explicit citations referencing the provided document URLs with verbatim quotes.
+5. Reference only citation IDs supplied with the documents. Do not create citations or provider identity fields.
 `;
 
     const result = await generateObject({
-      // GPT-5 defaults to strict structured output in this SDK. This schema has optional fields,
-      // so request OpenAI JSON mode and validate the parsed result locally instead.
       model: openai("gpt-5-nano", { structuredOutputs: false }),
-      schema: ProviderGuideSchema,
+      schema: GeneratedGuideDraftSchema,
       mode: "json",
       maxTokens: 8192,
       prompt,
     });
 
-    return ProviderGuideSchema.parse(result.object);
+    const draft = GeneratedGuideDraftSchema.parse(result.object);
+    const providerName = deriveProviderName(input.queryOrUrl, input.catalogItem);
+    const guide = ProviderGuideSchema.parse({
+      ...draft,
+      slug: input.catalogItem?.slug ?? (slugify(providerName) || "unknown-provider"),
+      providerName,
+      toolkitSlug: input.catalogItem?.slug,
+      generatedAt: new Date().toISOString(),
+      generationMode: "live-researched",
+      completenessStatus: "complete",
+      composioIntegration: {
+        ...draft.composioIntegration,
+        managedOAuthAvailable: input.catalogItem?.hasManagedOAuth ?? false,
+        epistemicStatus: input.catalogItem ? "observed" : "unknown",
+      },
+      citations: docs.map((document) => document.citation),
+    });
+    return {
+      guide,
+      diagnostics: { ...baseDiagnostics, modelAttempted: true, generationOutcome: "model-success" },
+    };
   } catch (error) {
-    console.error("[guide-generation] failed", { category: generationFailureCategory(error) });
-    // If AI generation fails for any reason, gracefully fall back to the safe partial guide
+    const category = generationFailureCategory(error);
+    console.error("[guide-generation] failed", { category });
     const fallback = buildPartialFallbackGuide(input);
     fallback.explicitUnknowns.push(
       "Live LLM guide generation failed. Retry later or use verified provider documentation."
     );
-    return fallback;
+    return {
+      guide: fallback,
+      diagnostics: {
+        ...baseDiagnostics,
+        modelAttempted: true,
+        generationOutcome: category.startsWith("http-") ? "model-http-error" : "model-output-invalid",
+        failureCategory: category,
+      },
+    };
   }
 }
