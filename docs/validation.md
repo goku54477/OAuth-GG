@@ -10,7 +10,14 @@ This file distinguishes deterministic verification from external paid acceptance
 - Persisted-guide migration is run twice to prove idempotence.
 - Production dependency audit must report zero critical and zero high advisories.
 
-The final tested commit SHA and command results will be recorded at the merge gate.
+Validated implementation commit: `b2fdeb3` (2026-10-20).
+
+- `npx vitest run`: 117 tests passed across 8 files.
+- `npx tsc --noEmit --incremental false`: zero errors.
+- `npm audit --omit=dev --audit-level=high`: zero critical/high production advisories; five low advisories remain in the intentionally unchanged AI SDK major line.
+- `npm run build`: Next.js 15.5.28 production build completed successfully.
+- `npm run audit:guides` twice: 11 persisted records audited on each run with stable canonical output.
+- Browser acceptance: Guides/Catalog navigation, invalid-tab fallback, Saved/OAuth/All segmentation, catalog-to-investigation prefill, reference and partial guides, mobile/tablet widths, `/api/catalog`, guide API 404, and page 404 verified. No console errors or horizontal viewport overflow were observed.
 
 ## Outside-catalog acceptance
 
