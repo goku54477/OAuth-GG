@@ -7,7 +7,13 @@ import { retrieveProviderEvidence } from "@/lib/research";
 import { LiveResearchRequestSchema } from "@/types/contracts";
 
 function toolkitSlug(queryOrUrl: string): string {
-  return queryOrUrl.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[./\s]/)[0] ?? "";
+  const value = queryOrUrl.trim().toLowerCase();
+  const hostname = value.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  const knownProvider = hostname.includes("github.com") ? "github"
+    : hostname.includes("slack.com") ? "slack"
+    : hostname.includes("google.com") || hostname.includes("gmail.com") ? "gmail"
+    : null;
+  return knownProvider ?? value.split(/[./\s]/)[0] ?? "";
 }
 
 export async function POST(request: Request) {
@@ -19,7 +25,11 @@ export async function POST(request: Request) {
     const liveMetadata = catalogItem ? await fetchLiveToolkitMetadata(catalogItem.slug) : null;
     const researchBundle = await retrieveProviderEvidence(parsed.data);
     const generated = await generateOrResolveGuide({ queryOrUrl, capabilities, catalogItem: liveMetadata?.summary ?? catalogItem, researchBundle });
-    const guide = verifyAndAuditGuide(generated, researchBundle.documents.map((document) => document.citation.sourceUrl));
+    const allowedSourceUrls = new Set([
+      ...researchBundle.documents.map((document) => document.citation.sourceUrl),
+      ...generated.citations.map((citation) => citation.sourceUrl),
+    ]);
+    const guide = verifyAndAuditGuide(generated, [...allowedSourceUrls]);
     await saveGuide(guide);
     return NextResponse.json({ guide, redirectUrl: `/guides/${guide.slug}`, researchWarnings: researchBundle.warnings });
   } catch {

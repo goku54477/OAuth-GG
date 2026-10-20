@@ -861,10 +861,6 @@ GOLDEN_GUIDES_SEED["slack"] = SLACK_GUIDE_SEED;
 
 // Database Connection & In-Memory / File Fallback Store
 const inMemoryGuides = new Map<string, ProviderGuide>();
-// Seed in-memory map with the 3 golden guides
-for (const [key, g] of Object.entries(GOLDEN_GUIDES_SEED)) {
-  inMemoryGuides.set(key, g);
-}
 
 let dbClient: Client | null = null;
 let dbInitialized = false;
@@ -1048,11 +1044,6 @@ export async function getGuideBySlug(slug: string): Promise<ProviderGuide | null
   // 3. Try In-Memory Map
   if (inMemoryGuides.has(normalizedSlug)) {
     return inMemoryGuides.get(normalizedSlug)!;
-  }
-
-  // 4. Try Golden Guides seed by slug or alias
-  if (GOLDEN_GUIDES_SEED[normalizedSlug]) {
-    return GOLDEN_GUIDES_SEED[normalizedSlug];
   }
 
   return null;
