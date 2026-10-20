@@ -44,11 +44,16 @@ function sourceSentences(citation: EvidenceCitation): string[] {
     .filter((sentence) => !sentence.startsWith("#"));
 }
 
+function isActionableSetupInstruction(sentence: string): boolean {
+  const value = sentence.trim();
+  if (value.startsWith("#") || /\|\s*description\s*\|/i.test(value)) return false;
+  return /^(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(value)
+    || /^(when|after) you\b/i.test(value)
+    || /\b(need|must|will need)\s+to\s+(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(value);
+}
+
 function documentedSetupStep(citation: EvidenceCitation, stepNumber: number): SetupStep | undefined {
-  const instruction = sourceSentences(citation).find((sentence) =>
-    /^(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(sentence)
-      || /\b(need|must)\s+to\s+(create|register|configure|add|set|specify|select|enable|generate|use|request)\b/i.test(sentence),
-  );
+  const instruction = sourceSentences(citation).find(isActionableSetupInstruction);
   if (!instruction) return undefined;
 
   return {
@@ -209,7 +214,8 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
   const supportedSteps = guide.registrationSteps.filter((step) =>
     step.citationIds.some((id) => {
       const citation = citationById.get(id);
-      return citationSupportsText(citation, step.instructions);
+      return citationSupportsText(citation, step.instructions)
+        && isActionableSetupInstruction(step.instructions);
     }),
   ).filter((step) => step.title !== "Consult official provider documentation").map((step) => ({
     ...step,

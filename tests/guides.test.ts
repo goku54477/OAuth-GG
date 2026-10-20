@@ -263,7 +263,11 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(normalized.variants[0].scopes).toEqual([]);
     expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
-    expect(normalized.registrationSteps).toEqual([]);
+    expect(normalized.registrationSteps).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        instructions: "When you register a GitHub App, you can select permissions for the app.",
+      }),
+    ]));
     expect(normalized.explicitUnknowns).toContain("Requested capability coverage");
     expect(normalized.explicitUnknowns.join(" ")).not.toMatch(/casa|al1|al2/i);
     expect(normalized.explicitUnknowns.join(" ")).not.toContain("does not publish");
@@ -351,7 +355,12 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
         estimatedReviewTimeline: "3 days",
         securityAuditRequired: "Always required",
       }],
-      registrationSteps: [],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Configure OAuth application",
+        instructions: "## OAuth configuration",
+        citationIds: [oauthCitation.id],
+      }],
       distributionAndReviewChecklist: [{
         claim: "Apps submitted to the HubSpot Marketplace must meet the certification requirements before listing.",
         epistemicStatus: "source-supported",
