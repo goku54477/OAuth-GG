@@ -6,3 +6,4 @@ data/
 dist/
 *.pem
 *.tsbuildinfo
+.vercel
