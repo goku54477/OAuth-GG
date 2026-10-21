@@ -71,6 +71,15 @@ export async function getToolkitByQuery(queryOrUrl: string): Promise<ComposioToo
   const direct = bySlug.get(query);
   if (direct) return cloneToolkit(direct);
 
+  // Some catalog entries expose an MCP-specific slug/name while people search
+  // for the provider itself (for example, "atlassian" -> "atlassian_mcp").
+  // Accept only a unique exact provider alias; never fuzzy-match catalog names.
+  const providerAliases = snapshot.filter((toolkit) => {
+    const name = toolkit.name.trim().toLowerCase();
+    return name === query || name === `${query} mcp` || toolkit.slug === `${query}_mcp`;
+  });
+  if (providerAliases.length === 1) return cloneToolkit(providerAliases[0]);
+
   try {
     const hostname = new URL(query).hostname.replace(/^www\./, "");
     for (const [domain, slug] of providerDomainAliases) {

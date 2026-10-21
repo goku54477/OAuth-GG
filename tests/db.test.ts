@@ -1,10 +1,14 @@
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 import { afterAll, beforeAll, describe, it, expect } from "vitest";
 import { auditPersistedGuides, saveGuide, getGuideBySlug, listSavedGuides } from "@/lib/db";
+import { GuideViewer } from "@/components/GuideViewer";
 import { guideToMarkdown } from "@/components/workbench-utils";
+import { GET as getGuideRoute } from "@/app/api/guides/[slug]/route";
 import type { ProviderGuide } from "@/types/contracts";
 
 describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
@@ -190,7 +194,7 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(saved).toEqual(retrieved);
     expect(retrieved?.composioIntegration.managedOAuthAvailable).toBe(true);
     expect(retrieved?.composioIntegration.customAuthConfigSnippet).toBe("");
-    expect(retrieved?.registrationSteps[0]?.consolePath).toBe(partialGuide.citations[0].sourceUrl);
+    expect(retrieved?.registrationSteps).toEqual([]);
     expect(retrieved?.distributionAndReviewChecklist).toEqual([]);
     expect(retrieved?.explicitUnknowns).toContain("Requested capability coverage");
   });
@@ -248,6 +252,208 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(markdown).toContain("Create a new OAuth2 Application");
   });
 
+  it("does not replace a richer supported guide with a sparser refresh", async () => {
+    const citation = {
+      ...testGuide.citations[0],
+      id: "richer-guide-docs",
+      verbatimQuote: [
+        "Create an OAuth application before requesting authorization.",
+        "Set the redirect URI to https://app.example-provider.com/oauth/callback.",
+        "Example configuration: redirect_uri=https://app.example-provider.com/oauth/callback",
+        "OAuth application review normally takes 2 business days.",
+        "Estimated implementation effort is 3 engineering days.",
+      ].join(" "),
+    };
+    const richGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "preserve-richer-guide",
+      citations: [citation],
+      composioIntegration: {
+        ...testGuide.composioIntegration,
+        customAuthConfigSnippet: "redirect_uri=https://app.example-provider.com/oauth/callback",
+        composioRedirectUriHint: "https://app.example-provider.com/oauth/callback",
+        citationIds: [citation.id],
+      },
+      variants: [{
+        ...testGuide.variants[0],
+        recommendedAppType: "OAuth application",
+        estimatedReviewTimeline: "OAuth application review normally takes 2 business days.",
+        estimatedEffort: "Estimated implementation effort is 3 engineering days.",
+        scopes: [],
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Create OAuth application",
+        instructions: "Create an OAuth application before requesting authorization.",
+        citationIds: [citation.id],
+      }],
+    };
+    const first = await saveGuide(richGuide);
+    const sparseRefresh: ProviderGuide = {
+      ...richGuide,
+      generatedAt: "2026-10-21T12:00:00.000Z",
+      composioIntegration: {
+        ...richGuide.composioIntegration,
+        customAuthConfigSnippet: "",
+        composioRedirectUriHint: "",
+      },
+      variants: [{ ...richGuide.variants[0], estimatedReviewTimeline: "Unknown" }],
+      registrationSteps: [],
+    };
+
+    const saved = await saveGuide(sparseRefresh);
+    const retrieved = await getGuideBySlug(richGuide.slug);
+    const response = await getGuideRoute(new Request("http://localhost/api/guides/preserve-richer-guide"), {
+      params: Promise.resolve({ slug: richGuide.slug }),
+    });
+    const payload = await response.json();
+    const markdown = guideToMarkdown(saved);
+    const html = renderToStaticMarkup(createElement(GuideViewer, { guide: saved }));
+
+    expect(saved).toEqual(first);
+    expect(retrieved).toEqual(first);
+    expect(payload.guide).toEqual(first);
+    expect(markdown).toContain("redirect_uri=https://app.example-provider.com/oauth/callback");
+    expect(markdown).toContain("OAuth application review normally takes 2 business days.");
+    expect(markdown).toContain("Estimated implementation effort is 3 engineering days.");
+    expect(html).toContain("Copy configuration snippet");
+    expect(html).toContain("OAuth application review normally takes 2 business days.");
+    expect(html).toContain("Estimated implementation effort");
+  });
+
+  it("preserves supported field coverage when a refresh has the same evidence score", async () => {
+    const citation = {
+      ...testGuide.citations[0],
+      id: "coverage-preservation-docs",
+      verbatimQuote: [
+        "Create an OAuth application before requesting authorization.",
+        "OAuth application review normally takes 2 business days.",
+      ].join(" "),
+    };
+    const richGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "preserve-supported-coverage",
+      citations: [citation],
+      variants: [{
+        ...testGuide.variants[0],
+        recommendedAppType: "OAuth application",
+        estimatedReviewTimeline: "OAuth application review normally takes 2 business days.",
+        scopes: [],
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Create OAuth application",
+        instructions: "Create an OAuth application before requesting authorization.",
+        citationIds: [citation.id],
+      }],
+    };
+    const first = await saveGuide(richGuide);
+    const equallyScoredButWeaker: ProviderGuide = {
+      ...richGuide,
+      generatedAt: "2026-10-21T13:00:00.000Z",
+      variants: [{
+        ...richGuide.variants[0],
+        recommendedAppType: "Unknown",
+        estimatedReviewTimeline: "Unknown",
+        approvalGateSummary: "Create an OAuth application before requesting authorization.",
+      }],
+      registrationSteps: [],
+    };
+
+    const saved = await saveGuide(equallyScoredButWeaker);
+
+    expect(saved).toEqual(first);
+    expect(saved.registrationSteps).toHaveLength(1);
+    expect(saved.variants[0]?.estimatedReviewTimeline).toContain("2 business days");
+  });
+
+  it("rehydrates a legacy generic-link record from retained official excerpts", async () => {
+    const legacyGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "hubspot-legacy-link-record",
+      providerName: "HubSpot",
+      citations: [{
+        ...testGuide.citations[0],
+        id: "hubspot-docs",
+        sourceUrl: "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/authentication/oauth/working-with-oauth",
+        verbatimQuote: "Create an OAuth app in your developer account. Add the redirect URL to your app settings before users authorize the app. Apps submitted to the HubSpot Marketplace must meet certification requirements before listing.",
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Consult official provider documentation",
+        instructions: "Working with OAuth - HubSpot docs",
+        citationIds: ["hubspot-docs"],
+      }],
+      distributionAndReviewChecklist: [],
+    };
+    const existing = fs.existsSync(fallbackPath)
+      ? JSON.parse(fs.readFileSync(fallbackPath, "utf-8"))
+      : {};
+    fs.writeFileSync(fallbackPath, JSON.stringify({ ...existing, [legacyGuide.slug]: legacyGuide }));
+
+    await auditPersistedGuides();
+    const migrated = await getGuideBySlug(legacyGuide.slug);
+    const markdown = guideToMarkdown(migrated!);
+
+    expect(migrated?.registrationSteps).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        instructions: expect.stringContaining("Create an OAuth app"),
+        citationIds: ["hubspot-docs"],
+      }),
+    ]));
+    expect(migrated?.distributionAndReviewChecklist[0]?.claim).toContain("HubSpot Marketplace");
+    expect(markdown).toContain("Create an OAuth app");
+  });
+
+  it("migrates title-only setup records without turning review status into configuration", async () => {
+    const legacyGuide: ProviderGuide = {
+      ...testGuide,
+      slug: "trello-legacy-title-record",
+      providerName: "Trello",
+      citations: [{
+        ...testGuide.citations[0],
+        id: "trello-submission",
+        sourceUrl: "https://developers.trello.com/docs/submitting-your-integration",
+        sourceTitle: "Submit Your Integration",
+        verbatimQuote: [
+          "# Submit Your Integration",
+          "1. Fill Out Submission Form",
+          "To submit your app, please complete the form at go.trello.com/dev-support.",
+          "After you've submitted your integration for review, the review team will notify you that they've received the submission and are reviewing the integration.",
+        ].join("\n"),
+      }],
+      registrationSteps: [{
+        ...testGuide.registrationSteps[0],
+        title: "Consult official provider documentation",
+        instructions: "Submit Your Integration",
+        citationIds: ["trello-submission"],
+      }],
+      variants: [{ ...testGuide.variants[0], scopes: [], estimatedReviewTimeline: "Two days" }],
+      distributionAndReviewChecklist: [],
+    };
+    const existing = fs.existsSync(fallbackPath)
+      ? JSON.parse(fs.readFileSync(fallbackPath, "utf-8"))
+      : {};
+    fs.writeFileSync(fallbackPath, JSON.stringify({ ...existing, [legacyGuide.slug]: legacyGuide }));
+
+    await auditPersistedGuides();
+    const migrated = await getGuideBySlug(legacyGuide.slug);
+    const markdown = guideToMarkdown(migrated!);
+
+    expect(migrated?.registrationSteps).toEqual([]);
+    expect(migrated?.distributionAndReviewChecklist).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        claim: "To submit your app, please complete the form at go.trello.com/dev-support.",
+        citationIds: ["trello-submission"],
+      }),
+    ]));
+    expect(migrated?.variants[0]?.estimatedReviewTimeline).toBe("Unknown");
+    expect(migrated?.variants[0]?.scopes).toEqual([]);
+    expect(migrated?.explicitUnknowns).toContain("Captured official evidence does not map requested operations to named provider permissions.");
+    expect(markdown).toContain("To submit your app, please complete the form");
+    expect(markdown).not.toContain("## Provider registration");
+  });
+
   it("lists only persisted guides; reference guides are resolved separately", async () => {
     const list = await listSavedGuides();
     expect(Array.isArray(list)).toBe(true);
@@ -255,14 +461,30 @@ describe("Database Persistence Layer (src/lib/db/index.ts)", () => {
     expect(list.map((item) => item.slug)).not.toContain("gmail-send-vs-modify");
   });
 
-  it("audits persisted records idempotently", async () => {
+  it("writes only changed persisted records and reports zero changes on its second pass", async () => {
+    const existing = fs.existsSync(fallbackPath)
+      ? JSON.parse(fs.readFileSync(fallbackPath, "utf-8"))
+      : {};
+    fs.writeFileSync(fallbackPath, JSON.stringify({
+      ...existing,
+      "idempotent-legacy-record": {
+        ...testGuide,
+        slug: "idempotent-legacy-record",
+        registrationSteps: [{
+          ...testGuide.registrationSteps[0],
+          title: "Consult official provider documentation",
+          instructions: "Linear Developer Documentation",
+        }],
+      },
+    }));
+
     const firstCount = await auditPersistedGuides();
-    const first = await getGuideBySlug("unsafe-live-guide");
+    const first = await getGuideBySlug("idempotent-legacy-record");
     const secondCount = await auditPersistedGuides();
-    const second = await getGuideBySlug("unsafe-live-guide");
+    const second = await getGuideBySlug("idempotent-legacy-record");
 
     expect(firstCount).toBeGreaterThan(0);
-    expect(secondCount).toBe(firstCount);
+    expect(secondCount).toBe(0);
     expect(second).toEqual(first);
   });
 });

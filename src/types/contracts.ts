@@ -62,6 +62,7 @@ export const CapabilityVariantSchema = z.object({
   scopes: z.array(ScopeRequirementSchema),
   approvalGateSummary: z.string(),
   estimatedReviewTimeline: z.string(),
+  estimatedEffort: z.string().optional(),
   securityAuditRequired: z.string(),
   pros: z.array(z.string()),
   cons: z.array(z.string()),

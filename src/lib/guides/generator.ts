@@ -260,7 +260,7 @@ ${d.highlights.join("\n")}
 CRITICAL SECURITY REQUIREMENTS:
 0. Keep every field concise so complete valid JSON fits within the output limit.
 1. Include a permission name only when a cited official passage explicitly names it. Do not claim it covers a requested operation unless that mapping is directly documented.
-2. Do not infer sensitivity classifications, review or audit requirements, timelines, costs, application-type recommendations, custom credentials, redirect URIs, or console paths. Leave those fields Unknown or empty when sources do not establish them.
+2. Do not infer sensitivity classifications, review or audit requirements, review timelines, effort estimates, costs, application-type recommendations, custom credentials, redirect URIs, or console paths. Leave those fields Unknown or empty when sources do not establish them.
 3. For registration guidance, prefer a directly cited official documentation URL over an inferred console path.
 4. Reference only supplied citation IDs. Do not create citations or provider identity fields.
 `;

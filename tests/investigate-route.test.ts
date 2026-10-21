@@ -79,6 +79,29 @@ describe("POST /api/guides/investigate", () => {
     expect(mocks.saveGuide).toHaveBeenCalledTimes(1);
   });
 
+  it("accepts the Atlassian catalog alias before generation", async () => {
+    mocks.getToolkitByQuery.mockResolvedValueOnce({
+      slug: "atlassian_mcp",
+      name: "Atlassian MCP",
+      appUrl: "https://mcp.atlassian.com/v1/mcp/authv2",
+      hasManagedOAuth: true,
+      categories: [], authSchemes: [], composioManagedAuthSchemes: [],
+      requiresCustomAppForProduction: false, requiredAuthCreationFields: [],
+      toolsCount: 0, triggersCount: 0, description: "",
+    });
+    mocks.fetchLiveToolkitMetadata.mockResolvedValueOnce(null);
+
+    const response = await POST(new Request("http://localhost/api/guides/investigate", {
+      method: "POST",
+      body: JSON.stringify({ queryOrUrl: "atlassian" }),
+    }));
+
+    expect(response.status).toBe(200);
+    expect(mocks.generateOrResolveGuideWithDiagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({ providerIdentityVerified: true, catalogItem: expect.objectContaining({ slug: "atlassian_mcp" }) }),
+    );
+  });
+
   it("keeps provider identity separate from a direct official documentation URL", async () => {
     const response = await POST(new Request("http://localhost/api/guides/investigate", {
       method: "POST",
@@ -164,6 +187,39 @@ describe("POST /api/guides/investigate", () => {
     expect(payload.guide).toEqual(canonical);
     expect(payload.redirectUrl).toBe(`/guides/${canonical.slug}`);
     expect(payload.generationDiagnostics).toMatchObject({ generationOutcome: "model-success" });
+  });
+
+  it("returns citation-backed detail already preserved by canonical persistence", async () => {
+    const canonical = {
+      ...gmailSendVsModifyGuide,
+      generationMode: "live-researched" as const,
+      composioIntegration: {
+        ...gmailSendVsModifyGuide.composioIntegration,
+        customAuthConfigSnippet: "redirect_uri=https://provider.example/oauth/callback",
+        composioRedirectUriHint: "https://provider.example/oauth/callback",
+      },
+      variants: [{
+        ...gmailSendVsModifyGuide.variants[0],
+        estimatedReviewTimeline: "OAuth application review normally takes 2 business days.",
+      }],
+    };
+    mocks.saveGuide.mockResolvedValueOnce(canonical);
+
+    const response = await POST(new Request("http://localhost/api/guides/investigate", {
+      method: "POST",
+      body: JSON.stringify({ queryOrUrl: "Acme" }),
+    }));
+    const payload = await response.json();
+
+    expect(payload.guide.composioIntegration.customAuthConfigSnippet).toBe(
+      "redirect_uri=https://provider.example/oauth/callback",
+    );
+    expect(payload.guide.composioIntegration.composioRedirectUriHint).toBe(
+      "https://provider.example/oauth/callback",
+    );
+    expect(payload.guide.variants[0].estimatedReviewTimeline).toBe(
+      "OAuth application review normally takes 2 business days.",
+    );
   });
 
   it("does not claim success when canonical persistence fails", async () => {

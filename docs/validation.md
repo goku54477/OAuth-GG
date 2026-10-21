@@ -12,16 +12,30 @@ This file distinguishes deterministic verification from external paid acceptance
 
 Validated implementation commit: `b2fdeb3` (2026-10-20).
 
-- `npx vitest run`: 117 tests passed across 8 files.
+- `npx vitest run`: 122 tests passed across 8 files on the submission-integrity release branch. Re-run after every submitted change.
 - `npx tsc --noEmit --incremental false`: zero errors.
 - `npm audit --omit=dev --audit-level=high`: zero critical/high production advisories; five low advisories remain in the intentionally unchanged AI SDK major line.
 - `npm run build`: Next.js 15.5.28 production build completed successfully.
 - `npm run audit:guides` twice: 11 persisted records audited on each run with stable canonical output.
 - Browser acceptance: Guides/Catalog navigation, invalid-tab fallback, Saved/OAuth/All segmentation, catalog-to-investigation prefill, reference and partial guides, mobile/tablet widths, `/api/catalog`, guide API 404, and page 404 verified. No console errors or horizontal viewport overflow were observed.
 
+## Submission-integrity release validation
+
+Code-integrity release commit: `e92c22789ea71f2acc0a13996534ecc7188f246e` (2026-10-21).
+
+- `npx vitest run`: 122 tests passed across 8 files.
+- `npx tsc --noEmit --incremental false`: zero errors.
+- `npm run build`: Next.js 15.5.28 production build completed successfully.
+- `npm audit --omit=dev --audit-level=high`: zero critical/high production advisories; five low AI-SDK transitive advisories remain.
+- `npm run audit:guides` ran twice against configured Turso persistence: 15 persisted records audited on each pass.
+- Fresh public browser sessions loaded `/`, `/guides/hubspot`, and `/guides/linear`. `GET /api/catalog` returned 1,619 entries and a missing-guide request returned 404.
+- HubSpot now renders one source-backed configuration instruction and conditional Marketplace review facts; it does not claim scope coverage. Linear renders source-backed OAuth setup and documented scope names; requested workflow coverage remains Unknown.
+
+No paid generation request was made for this release. A model-success label remains distinct from complete source coverage.
+
 ## Outside-catalog acceptance
 
-Status: **Executed on 2026-10-20 — successful live completion recorded.**
+Status: **Executed on 2026-10-20 — model invocation completed; evidence result remained partial.**
 
 Planned request, without credentials:
 
@@ -50,7 +64,7 @@ The initial 401 was traced to a stale process-level `OPENAI_API_KEY` inherited b
 
 ## Additional live acceptance: HubSpot
 
-Status: **Executed on 2026-10-20 — successful live completion recorded.**
+Status: **Executed on 2026-10-20 — model invocation completed; evidence result remained partial.**
 
 Request, without credentials:
 
@@ -65,6 +79,6 @@ Request, without credentials:
 Observed result:
 
 - Catalog identity resolution matched HubSpot and direct official-document retrieval produced one citation with no Exa discovery.
-- One `gpt-5-nano` attempt completed successfully with `generationMode: live-researched`.
+- One `gpt-5-nano` attempt completed with `generationMode: live-researched`; that status means a model draft was returned, not that requested capability coverage was proven.
 - The canonical persisted guide is deliberately `partial`: this specific page does not explicitly establish the requested `read` permission. It records that limitation as an explicit unknown rather than claiming sufficient access.
 - POST, persistence, and GET resolved to the same guide. The rendered route exposes the supplied official documentation link, requested capability, citation, and explicit unknowns, without a configuration snippet, callback value, secret-like content, fictional domain, fee, timeline, or audit claim.

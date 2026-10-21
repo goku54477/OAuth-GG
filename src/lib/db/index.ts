@@ -2,7 +2,7 @@ import { createClient, type Client } from "@libsql/client";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-import { normalizeGuideForEvidence } from "@/lib/guides/evidence-validator";
+import { guideEvidenceScore, guideSupportedFieldKeys, normalizeGuideForEvidence } from "@/lib/guides/evidence-validator";
 import { getGoldenGuideBySlug } from "@/lib/guides";
 import { ProviderGuideSchema, type ProviderGuide } from "@/types/contracts";
 
@@ -75,6 +75,14 @@ async function getClient(): Promise<Client | null> {
 export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
   if (!guide?.slug) throw new Error("Invalid guide object or missing slug");
   const safeGuide = normalizeGuideForEvidence(ProviderGuideSchema.parse(guide));
+  const existing = await getGuideBySlug(safeGuide.slug);
+  const normalizedExisting = existing ? normalizeGuideForEvidence(existing) : null;
+  const existingFields = normalizedExisting ? guideSupportedFieldKeys(normalizedExisting) : new Set<string>();
+  const refreshedFields = guideSupportedFieldKeys(safeGuide);
+  const refreshLosesSupportedCoverage = [...existingFields].some((field) => !refreshedFields.has(field));
+  const persistedGuide = normalizedExisting && (
+    refreshLosesSupportedCoverage || guideEvidenceScore(normalizedExisting) > guideEvidenceScore(safeGuide)
+  ) ? normalizedExisting : safeGuide;
   const client = await getClient();
   if (client) {
     try {
@@ -84,31 +92,32 @@ export async function saveGuide(guide: ProviderGuide): Promise<ProviderGuide> {
           ON CONFLICT(slug) DO UPDATE SET provider_name = excluded.provider_name, title = excluded.title,
           generation_mode = excluded.generation_mode, completeness_status = excluded.completeness_status,
           generated_at = excluded.generated_at, guide_json = excluded.guide_json;`,
-        args: [safeGuide.slug, safeGuide.providerName, safeGuide.title, safeGuide.generationMode,
-          safeGuide.completenessStatus, safeGuide.generatedAt, JSON.stringify(safeGuide)],
+        args: [persistedGuide.slug, persistedGuide.providerName, persistedGuide.title, persistedGuide.generationMode,
+          persistedGuide.completenessStatus, persistedGuide.generatedAt, JSON.stringify(persistedGuide)],
       });
     } catch {
       throw new Error("Failed to persist guide");
     }
   }
-  inMemoryGuides.set(safeGuide.slug, safeGuide);
-  if (safeGuide.toolkitSlug) inMemoryGuides.set(safeGuide.toolkitSlug.toLowerCase(), safeGuide);
+  inMemoryGuides.set(persistedGuide.slug, persistedGuide);
+  if (persistedGuide.toolkitSlug) inMemoryGuides.set(persistedGuide.toolkitSlug.toLowerCase(), persistedGuide);
   const fallbackRecords = loadFallbackFile();
-  fallbackRecords[safeGuide.slug] = safeGuide;
+  fallbackRecords[persistedGuide.slug] = persistedGuide;
   saveFallbackFile(fallbackRecords);
-  return safeGuide;
+  return persistedGuide;
 }
 
 /** Idempotently applies the integrity boundary to LibSQL and JSON records. */
 export async function auditPersistedGuides(): Promise<number> {
-  const guides = new Map<string, ProviderGuide>();
+  const guides = new Map<string, { original: ProviderGuide; canonical: ProviderGuide }>();
   const addPersistedGuide = (guide: ProviderGuide) => {
     // Old database seeds are replaced by their canonical data source rather
     // than normalized in-place; they must never win over reference guides.
     const canonicalReference = guide.generationMode === "golden-verified"
       ? getGoldenGuideBySlug(guide.slug)
       : null;
-    guides.set((canonicalReference ?? guide).slug, canonicalReference ?? guide);
+    const canonical = normalizeGuideForEvidence(canonicalReference ?? guide);
+    guides.set(canonical.slug, { original: guide, canonical });
   };
   for (const guide of Object.values(loadFallbackFile())) {
     const parsed = ProviderGuideSchema.safeParse(guide);
@@ -126,8 +135,14 @@ export async function auditPersistedGuides(): Promise<number> {
       // JSON records remain migratable if a remote query fails.
     }
   }
-  for (const guide of guides.values()) await saveGuide(guide);
-  return guides.size;
+  let changed = 0;
+  for (const { original, canonical } of guides.values()) {
+    if (JSON.stringify(original) !== JSON.stringify(canonical)) {
+      await saveGuide(canonical);
+      changed++;
+    }
+  }
+  return changed;
 }
 
 export async function getGuideBySlug(slug: string): Promise<ProviderGuide | null> {

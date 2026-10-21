@@ -273,6 +273,24 @@ describe("Exa discovery", () => {
     expect(hasVerifiedProviderIdentity(null, [])).toBe(false);
   });
 
+  it("accepts the verified Atlassian developer-docs sibling but rejects lookalikes", () => {
+    expect(classifyProviderAuthority(
+      "Atlassian",
+      "https://developer.atlassian.com/cloud/jira/platform/oauth-2-3lo-apps/",
+      ["https://mcp.atlassian.com/v1/mcp/authv2"],
+    )).toBe("official-provider-docs");
+    expect(classifyProviderAuthority(
+      "Atlassian",
+      "https://developer.atlassian.com.attacker.example/oauth",
+      ["https://mcp.atlassian.com/v1/mcp/authv2"],
+    )).toBe("secondary-technical");
+    expect(classifyProviderAuthority(
+      "Atlassian",
+      "https://mcp.atlassian.com.attacker.example/oauth",
+      ["https://mcp.atlassian.com/v1/mcp/authv2"],
+    )).toBe("secondary-technical");
+  });
+
   it("requires an outside-catalog provider to match the registrable documentation domain", () => {
     const document = {
       citation: {

@@ -30,6 +30,7 @@ import {
   getDocumentedScopes,
   getGuideGenerationLabel,
   getManagedOAuthLabel,
+  getGuideVariantSectionTitle,
   guideToMarkdown,
   hasSubstantiveGuideComparison,
 } from "@/components/workbench-utils";
@@ -391,7 +392,7 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
                       <Layers3 className="h-3.5 w-3.5" /> Capability variants
                     </p>
                     <h2 className="mt-3 text-lg font-semibold text-white">
-                      Scope and review comparison
+                      {getGuideVariantSectionTitle(guide)}
                     </h2>
                   </div>
                   <span className="font-mono text-xs text-zinc-600">
@@ -429,9 +430,10 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
                   {[
                     activeVariant.recommendedAppType,
                     activeVariant.estimatedReviewTimeline,
+                    activeVariant.estimatedEffort ?? "Unknown",
                     activeVariant.securityAuditRequired,
                   ].some(known) && (
-                    <dl className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <dl className="mt-5 grid gap-3 sm:grid-cols-4">
                       {known(activeVariant.recommendedAppType) && (
                         <div className="panel-muted p-3">
                           <dt className="text-[10px] uppercase tracking-wider text-zinc-600">
@@ -449,6 +451,16 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
                           </dt>
                           <dd className="mt-2 text-xs leading-5 text-zinc-300">
                             {activeVariant.estimatedReviewTimeline}
+                          </dd>
+                        </div>
+                      )}
+                      {known(activeVariant.estimatedEffort ?? "Unknown") && (
+                        <div className="panel-muted p-3">
+                          <dt className="text-[10px] uppercase tracking-wider text-zinc-600">
+                            Estimated effort
+                          </dt>
+                          <dd className="mt-2 text-xs leading-5 text-zinc-300">
+                            {activeVariant.estimatedEffort}
                           </dd>
                         </div>
                       )}

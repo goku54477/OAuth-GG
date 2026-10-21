@@ -84,6 +84,15 @@ describe("catalog snapshot", () => {
     await expect(getToolkitByQuery("https://github.example/oauth")).resolves.toBeNull();
     await expect(getToolkitByQuery("https://slack.com.attacker.example/oauth")).resolves.toBeNull();
   });
+
+  it("resolves a unique provider name to its MCP catalog entry", async () => {
+    const toolkit = await getToolkitByQuery("atlassian");
+
+    expect(toolkit).toMatchObject({
+      slug: "atlassian_mcp",
+      name: "Atlassian MCP",
+    });
+  });
 });
 
 describe("live metadata fallback", () => {
