@@ -20,6 +20,13 @@ const SHARED_HOST_SUFFIXES = [
   "web.app",
 ];
 
+// A catalog connector can use a service host while the provider publishes
+// OAuth instructions on a separate, verified developer host. Keep this
+// explicit: deriving sibling domains generically would accept lookalikes.
+const VERIFIED_OFFICIAL_SIBLING_HOSTS: Record<string, string[]> = {
+  "mcp.atlassian.com": ["developer.atlassian.com"],
+};
+
 interface ExaSearchOptions {
   apiKey?: string;
   fetch?: typeof fetch;
@@ -48,6 +55,13 @@ function resultId(sourceUrl: string): string {
 
 function hostMatches(hostname: string, trustedHostname: string): boolean {
   return hostname === trustedHostname || hostname.endsWith(`.${trustedHostname}`);
+}
+
+function hostMatchesTrustedProvider(hostname: string, trustedHostname: string): boolean {
+  return hostMatches(hostname, trustedHostname)
+    || (VERIFIED_OFFICIAL_SIBLING_HOSTS[trustedHostname] ?? []).some((sibling) =>
+      hostMatches(hostname, sibling),
+    );
 }
 
 export function classifyProviderAuthority(
@@ -79,7 +93,7 @@ export function classifyProviderAuthority(
     // A name-only query cannot establish domain ownership by itself.
   }
 
-  return trustedHostnames.some((trustedHostname) => hostMatches(normalizedHostname, trustedHostname))
+  return trustedHostnames.some((trustedHostname) => hostMatchesTrustedProvider(normalizedHostname, trustedHostname))
     ? "official-provider-docs"
     : "secondary-technical";
 }

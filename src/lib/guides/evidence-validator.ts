@@ -17,20 +17,83 @@ export interface AuditResult {
 
 const COVERAGE_UNKNOWN = "Requested capability coverage";
 const COVERAGE_UNKNOWN_REASON = "Captured official evidence does not map requested operations to named provider permissions.";
-const SETUP_ACTION = "(?:create|register|configure|add|set|specify|select|enable|generate|use|request|fill(?:\\s+out)?|click|enter|give)";
+const SETUP_ACTION = "(?:create|register|configure|add|set|specify|select|enable|generate|fill(?:\\s+out)?|click|enter|give|hover|provide)";
 const OAUTH_SETUP_CONTEXT = /\b(?:oauth|redirect(?:\s+url)?|callback|authorization|authorize|client(?:\s+(?:id|secret))?|grant|scope)\b/i;
 const APP_REGISTRATION_CONTEXT = /\b(?:register|create|configure)\b.*\b(?:app|application|integration)\b/i;
-const INTEGRATION_DIRECTORY_CONTEXT = /\b(?:submit|review|marketplace|certification|listing|directory)\b/i;
+const INTEGRATION_DIRECTORY_CONTEXT = /\b(?:submit|marketplace|certification|listing|directory)\b/i;
+const REVIEW_CONTEXT = /\b(?:review|approval|certification|listing)\b/i;
 const TIMELINE_ESTIMATE = /\b(?:takes?|usually|within|approximately|about|around)\b[^.]{0,60}\b(?:hours?|days?|weeks?|months?)\b/i;
+const CONFIG_ASSIGNMENT = /\b(?:redirect_uri|client_id|client_secret|authorization_url|token_url|scope)\b\s*[:=]/i;
+const PLACEHOLDER_VALUE = /(?:<[^>]+>|\$\{[^}]+\}|\b(?:your|replace|example)[_-])/i;
+const CLAIM_STOP_WORDS = new Set([
+  "a", "an", "and", "app", "application", "before", "for", "in", "into", "of", "or", "the", "to", "with", "your",
+]);
 
 function normalizedText(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9:]+/g, " ").trim().replace(/\s+/g, " ");
 }
 
+function claimTerms(value: string): string[] {
+  return normalizedText(value).split(" ")
+    .map((term) => term.replace(/(?:ing|ed|es|s)$/i, ""))
+    .filter((term) => term.length >= 3 && !CLAIM_STOP_WORDS.has(term));
+}
+
 function citationSupportsText(citation: EvidenceCitation | undefined, value: string): boolean {
   if (!citation?.verbatimQuote) return false;
   const candidate = normalizedText(value);
-  return candidate.length > 6 && normalizedText(citation.verbatimQuote).includes(candidate);
+  if (candidate.length <= 6) return false;
+  const quote = normalizedText(citation.verbatimQuote);
+  if (quote.includes(candidate)) return true;
+  const terms = claimTerms(value);
+  if (terms.length === 0) return false;
+  const quoteTerms = new Set(claimTerms(citation.verbatimQuote));
+  const matched = terms.filter((term) => quoteTerms.has(term)).length;
+  // This permits a faithful paraphrase, but still requires more than a shared
+  // title word or generic action verb.
+  return matched >= Math.min(2, terms.length) && matched / terms.length >= 0.6;
+}
+
+function isCitedValue(citationIds: string[], value: string, citationById: Map<string, EvidenceCitation>): boolean {
+  return citationIds.some((id) => citationSupportsText(citationById.get(id), value));
+}
+
+function isSupportedConfigurationSnippet(
+  value: string,
+  citationIds: string[],
+  citationById: Map<string, EvidenceCitation>,
+): boolean {
+  if (!CONFIG_ASSIGNMENT.test(value) || containsLiteralSecret(value)) return false;
+  if (isCitedValue(citationIds, value, citationById)) return true;
+  return PLACEHOLDER_VALUE.test(value) && citationIds.some((id) =>
+    /\b(?:redirect_uri|client_id|client_secret|authorization_url|token_url|scope)\b/i.test(
+      citationById.get(id)?.verbatimQuote ?? "",
+    ),
+  );
+}
+
+function containsLiteralSecret(value: string): boolean {
+  return /["']?(?:client[_-]?secret|api[_-]?key|access[_-]?token|refresh[_-]?token|password)["']?\s*[:=]\s*["']?(?!\s*(?:process\.env|env\.|\$\{|<|\[|your[_-]?|replace|example))/i.test(value);
+}
+
+function isSupportedHttpsUrl(value: string, citationIds: string[], citationById: Map<string, EvidenceCitation>): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && isCitedValue(citationIds, value, citationById);
+  } catch {
+    return false;
+  }
+}
+
+function isSupportedReviewTimeline(variant: ProviderGuide["variants"][number], citations: EvidenceCitation[]): boolean {
+  return citations.some((citation) => {
+    return TIMELINE_ESTIMATE.test(citation.verbatimQuote ?? "")
+      && citationSupportsText(citation, variant.estimatedReviewTimeline);
+  });
+}
+
+function isSupportedEffort(value: string | undefined, citations: EvidenceCitation[]): boolean {
+  return Boolean(value && value !== "Unknown" && citations.some((citation) => citationSupportsText(citation, value)));
 }
 
 function documentedScopeDescription(citation: EvidenceCitation | undefined, scope: string): string | undefined {
@@ -56,22 +119,37 @@ function isActionableSetupInstruction(sentence: string): boolean {
   return new RegExp(`^(?:\\d+\\.\\s*)?${SETUP_ACTION}\\b`, "i").test(value)
     || new RegExp(`^to\\s+${SETUP_ACTION}\\b`, "i").test(value)
     || new RegExp(`^when\\s+you\\s+${SETUP_ACTION}\\b.*\\byou\\s+can\\s+${SETUP_ACTION}\\b`, "i").test(value)
-    || new RegExp(`\\b(?:need|must|will need|you'll need)\\s+to\\s+${SETUP_ACTION}\\b`, "i").test(value);
+    || new RegExp(`\\b(?:need|must|will need|you'll need)\\s+to\\s+${SETUP_ACTION}\\b`, "i").test(value)
+    || new RegExp(`^(?:in|under)\\b[^.!?]{0,55}\\b${SETUP_ACTION}\\b`, "i").test(value);
 }
 
 function isOAuthSetupInstruction(sentence: string): boolean {
   if (!isActionableSetupInstruction(sentence) || INTEGRATION_DIRECTORY_CONTEXT.test(sentence)) return false;
+  if (/^(?:use|select|configure)\s+(?:the\s+)?(?:current|this|that)\b/i.test(sentence.trim())) return false;
   return OAUTH_SETUP_CONTEXT.test(sentence) || APP_REGISTRATION_CONTEXT.test(sentence);
+}
+
+function setupTitleFromInstruction(instruction: string): string {
+  const trimmed = instruction.replace(/^(?:\d+\.\s*)?(?:to\s+)?/i, "");
+  const sentenceEnd = trimmed.search(/[;:!?]|\.(?!\d)/);
+  const firstClause = (sentenceEnd >= 0 ? trimmed.slice(0, sentenceEnd) : trimmed).trim();
+  return firstClause.length <= 90 ? firstClause : `${firstClause.slice(0, 87).trimEnd()}...`;
+}
+
+function normalizedSetupTitle(title: string, instruction: string): string {
+  return /^(?:configure oauth application|configure provider application)$/i.test(title)
+    || /\boauth\s+\d+$/i.test(title)
+    ? setupTitleFromInstruction(instruction)
+    : title;
 }
 
 function documentedSetupSteps(citation: EvidenceCitation): SetupStep[] {
   return sourceSentences(citation)
     .filter(isOAuthSetupInstruction)
+    .slice(0, 2)
     .map((instruction) => ({
       stepNumber: 0,
-      title: OAUTH_SETUP_CONTEXT.test(instruction)
-        ? "Configure OAuth application"
-        : "Configure provider application",
+      title: setupTitleFromInstruction(instruction),
       consolePath: citation.sourceUrl,
       instructions: instruction,
       criticalConfigValues: [],
@@ -96,17 +174,32 @@ function sourceBackedClaims(
 
 function citationDerivedReviewClaims(citations: EvidenceCitation[]): ClaimItem[] {
   return citations.flatMap((citation) => {
-    const claim = sourceSentences(citation).find((sentence) =>
-      INTEGRATION_DIRECTORY_CONTEXT.test(sentence) && !TIMELINE_ESTIMATE.test(sentence),
+    // A provider's extension/plugin review is not evidence for the OAuth or
+    // integration-distribution path. It remains unknown rather than leaking
+    // into this guide's review section.
+    if (/\/extensions?\//i.test(citation.sourceUrl) && !/oauth/i.test(citation.sourceUrl)) return [];
+    const citationContext = `${citation.sourceTitle} ${citation.sourceUrl} ${citation.verbatimQuote ?? ""}`;
+    const claims = sourceSentences(citation).filter((sentence) =>
+      INTEGRATION_DIRECTORY_CONTEXT.test(sentence)
+      || REVIEW_CONTEXT.test(sentence)
+      || (TIMELINE_ESTIMATE.test(sentence) && INTEGRATION_DIRECTORY_CONTEXT.test(citationContext)),
     );
-    return claim
-      ? [{
+    return claims.map((claim) => ({
           claim,
           epistemicStatus: "source-supported" as const,
           citationIds: [citation.id],
-        }]
-      : [];
+        }));
   }).slice(0, 3);
+}
+
+function publishedDistributionTimeline(citations: EvidenceCitation[]): string | undefined {
+  for (const citation of citations) {
+    const context = `${citation.sourceTitle} ${citation.sourceUrl} ${citation.verbatimQuote ?? ""}`;
+    if (!INTEGRATION_DIRECTORY_CONTEXT.test(context) || /\/extensions?\//i.test(citation.sourceUrl)) continue;
+    const timeline = sourceSentences(citation).find((sentence) => TIMELINE_ESTIMATE.test(sentence));
+    if (timeline) return timeline;
+  }
+  return undefined;
 }
 
 function documentedAppType(citations: EvidenceCitation[]): string | undefined {
@@ -120,6 +213,22 @@ function documentedAppType(citations: EvidenceCitation[]): string | undefined {
 
 export function normalizeReferenceGuideForEvidence(guide: ProviderGuide): ProviderGuide {
   if (guide.generationMode !== "golden-verified") return ProviderGuideSchema.parse(guide);
+  const citations = guide.citations.filter(isTrustedOfficialCitation);
+  const citationById = new Map(citations.map((citation) => [citation.id, citation]));
+  const customAuthConfigSnippet = isSupportedConfigurationSnippet(
+      guide.composioIntegration.customAuthConfigSnippet,
+      guide.composioIntegration.citationIds,
+      citationById,
+    )
+    ? guide.composioIntegration.customAuthConfigSnippet
+    : "";
+  const composioRedirectUriHint = isSupportedHttpsUrl(
+    guide.composioIntegration.composioRedirectUriHint,
+    guide.composioIntegration.citationIds,
+    citationById,
+  )
+    ? guide.composioIntegration.composioRedirectUriHint
+    : "";
 
   return ProviderGuideSchema.parse({
     ...guide,
@@ -128,13 +237,22 @@ export function normalizeReferenceGuideForEvidence(guide: ProviderGuide): Provid
       managedVsCustomVerdict: guide.composioIntegration.epistemicStatus === "unknown"
         ? "Composio managed OAuth availability is unknown because no catalog metadata is available."
         : "Managed OAuth availability is reported by current Composio catalog metadata. Production suitability is not inferred.",
-      customAuthConfigSnippet: "",
-      composioRedirectUriHint: "",
+      customAuthConfigSnippet,
+      composioRedirectUriHint,
     },
     variants: guide.variants.map((variant) => ({
       ...variant,
-      estimatedReviewTimeline: "Unknown",
-      securityAuditRequired: "Unknown",
+      estimatedReviewTimeline: isSupportedReviewTimeline(variant, citations)
+        ? variant.estimatedReviewTimeline
+        : publishedDistributionTimeline(citations) ?? "Unknown",
+      estimatedEffort: isSupportedEffort(variant.estimatedEffort, citations)
+        ? variant.estimatedEffort
+        : "Unknown",
+      securityAuditRequired: citations.some((citation) =>
+        citationSupportsText(citation, variant.securityAuditRequired),
+      )
+        ? variant.securityAuditRequired
+        : "Unknown",
     })),
   });
 }
@@ -197,6 +315,22 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     const recommendedAppType = citations.some((citation) => citationSupportsText(citation, variant.recommendedAppType))
       ? variant.recommendedAppType
       : documentedAppType(citations) ?? "Unknown";
+    const estimatedReviewTimeline = isSupportedReviewTimeline(variant, citations)
+      ? variant.estimatedReviewTimeline
+      : publishedDistributionTimeline(citations) ?? "Unknown";
+    const estimatedEffort = isSupportedEffort(variant.estimatedEffort, citations)
+      ? variant.estimatedEffort
+      : "Unknown";
+    const approvalGateSummary = citations.some((citation) =>
+      citationSupportsText(citation, variant.approvalGateSummary),
+    )
+      ? variant.approvalGateSummary
+      : "Unknown";
+    const securityAuditRequired = citations.some((citation) =>
+      citationSupportsText(citation, variant.securityAuditRequired),
+    )
+      ? variant.securityAuditRequired
+      : "Unknown";
 
     return {
       ...variant,
@@ -205,9 +339,10 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
         ? "Provider permission names are documented below; coverage for the requested workflow is not verified."
         : "No provider permission could be tied to an official source passage.",
       recommendedAppType,
-      approvalGateSummary: "Unknown",
-      estimatedReviewTimeline: "Unknown",
-      securityAuditRequired: "Unknown",
+      approvalGateSummary,
+      estimatedReviewTimeline,
+      estimatedEffort,
+      securityAuditRequired,
       pros: [],
       cons: [],
       scopes,
@@ -229,18 +364,46 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     }),
   ).filter((step) => step.title !== "Consult official provider documentation").map((step) => ({
     ...step,
+    title: normalizedSetupTitle(step.title, step.instructions),
     consolePath: step.citationIds.map((id) => citationById.get(id)?.sourceUrl).find(Boolean) ?? "",
-    criticalConfigValues: [],
+    criticalConfigValues: step.criticalConfigValues.filter((value) =>
+      !containsLiteralSecret(`${value.label}=${value.value}`)
+      && isCitedValue(step.citationIds, value.value, citationById),
+    ),
     epistemicStatus: "source-supported" as const,
   }));
 
   const testingAndSandboxRules = sourceBackedClaims(guide.testingAndSandboxRules, citationById);
-  const sourceBackedReviewClaims = sourceBackedClaims(guide.distributionAndReviewChecklist, citationById)
-    .filter((item) => !TIMELINE_ESTIMATE.test(item.claim));
-  const distributionAndReviewChecklist = sourceBackedReviewClaims.length
-    ? sourceBackedReviewClaims
-    : citationDerivedReviewClaims(citations);
+  const sourceBackedReviewClaims = sourceBackedClaims(guide.distributionAndReviewChecklist, citationById);
+  const distributionAndReviewChecklist = [...sourceBackedReviewClaims, ...citationDerivedReviewClaims(citations)]
+    .filter((item, index, items) => items.findIndex((candidate) =>
+      normalizedText(candidate.claim) === normalizedText(item.claim)
+        && candidate.citationIds.join(",") === item.citationIds.join(","),
+    ) === index);
   const practicalObservations = sourceBackedClaims(guide.practicalObservations, citationById);
+  const customAuthConfigSnippet = isSupportedConfigurationSnippet(
+    guide.composioIntegration.customAuthConfigSnippet,
+    guide.composioIntegration.citationIds,
+    citationById,
+  )
+    ? guide.composioIntegration.customAuthConfigSnippet
+    : "";
+  const composioRedirectUriHint = isSupportedHttpsUrl(
+    guide.composioIntegration.composioRedirectUriHint,
+    guide.composioIntegration.citationIds,
+    citationById,
+  )
+    ? guide.composioIntegration.composioRedirectUriHint
+    : "";
+  const managedVsCustomVerdict = isCitedValue(
+    guide.composioIntegration.citationIds,
+    guide.composioIntegration.managedVsCustomVerdict,
+    citationById,
+  )
+    ? guide.composioIntegration.managedVsCustomVerdict
+    : hasCatalogMetadata
+      ? "Managed OAuth availability is reported by current Composio catalog metadata."
+      : "Composio managed OAuth availability is unknown because no catalog metadata is available.";
 
   return ProviderGuideSchema.parse({
     ...guide,
@@ -249,22 +412,62 @@ export function normalizeGuideForEvidence(guide: ProviderGuide): ProviderGuide {
     completenessStatus: "partial",
     composioIntegration: {
       managedOAuthAvailable: guide.composioIntegration.managedOAuthAvailable,
-      managedVsCustomVerdict: hasCatalogMetadata
-        ? "Managed OAuth availability is reported by current Composio catalog metadata."
-        : "Composio managed OAuth availability is unknown because no catalog metadata is available.",
-      customAuthConfigSnippet: "",
-      composioRedirectUriHint: "",
+      managedVsCustomVerdict,
+      customAuthConfigSnippet,
+      composioRedirectUriHint,
       epistemicStatus: guide.composioIntegration.epistemicStatus,
       citationIds: guide.composioIntegration.citationIds.filter((id) => citationById.has(id)),
     },
     variants,
-    registrationSteps: supportedSteps.length ? supportedSteps : documentedSteps,
+    registrationSteps: [...supportedSteps, ...documentedSteps]
+      .filter((step, index, steps) => steps.findIndex((candidate) =>
+        normalizedText(candidate.instructions) === normalizedText(step.instructions),
+      ) === index)
+      .slice(0, 8)
+      .map((step, index) => ({ ...step, stepNumber: index + 1 })),
     testingAndSandboxRules,
     distributionAndReviewChecklist,
     practicalObservations,
     explicitUnknowns,
     citations,
   });
+}
+
+/** Counts only content that passed the existing evidence boundary. */
+export function guideEvidenceScore(guide: ProviderGuide): number {
+  return guide.variants.reduce((score, variant) => score
+    + variant.scopes.length
+    + (variant.recommendedAppType === "Unknown" ? 0 : 1)
+    + (variant.approvalGateSummary === "Unknown" ? 0 : 1)
+    + (variant.estimatedReviewTimeline === "Unknown" ? 0 : 1)
+    + (variant.securityAuditRequired === "Unknown" ? 0 : 1), 0)
+    + guide.registrationSteps.length
+    + guide.testingAndSandboxRules.length
+    + guide.distributionAndReviewChecklist.length
+    + guide.practicalObservations.length
+    + (guide.composioIntegration.customAuthConfigSnippet ? 1 : 0)
+    + (guide.composioIntegration.composioRedirectUriHint ? 1 : 0);
+}
+
+/** Stable keys for evidence-backed content, used to prevent sparse refreshes
+ * from erasing distinct supported details with an equal item count. */
+export function guideSupportedFieldKeys(guide: ProviderGuide): Set<string> {
+  const keys = new Set<string>();
+  guide.variants.forEach((variant, index) => {
+    if (variant.recommendedAppType !== "Unknown") keys.add(`variant:${index}:app-type:${normalizedText(variant.recommendedAppType)}`);
+    if (variant.approvalGateSummary !== "Unknown") keys.add(`variant:${index}:approval:${normalizedText(variant.approvalGateSummary)}`);
+    if (variant.estimatedReviewTimeline !== "Unknown") keys.add(`variant:${index}:timeline:${normalizedText(variant.estimatedReviewTimeline)}`);
+    if (variant.estimatedEffort && variant.estimatedEffort !== "Unknown") keys.add(`variant:${index}:effort:${normalizedText(variant.estimatedEffort)}`);
+    if (variant.securityAuditRequired !== "Unknown") keys.add(`variant:${index}:audit:${normalizedText(variant.securityAuditRequired)}`);
+    variant.scopes.forEach((scope) => keys.add(`variant:${index}:scope:${normalizedText(scope.scope)}`));
+  });
+  guide.registrationSteps.forEach((step) => keys.add(`step:${normalizedText(step.instructions)}`));
+  guide.testingAndSandboxRules.forEach((item) => keys.add(`testing:${normalizedText(item.claim)}`));
+  guide.distributionAndReviewChecklist.forEach((item) => keys.add(`distribution:${normalizedText(item.claim)}`));
+  guide.practicalObservations.forEach((item) => keys.add(`observation:${normalizedText(item.claim)}`));
+  if (guide.composioIntegration.customAuthConfigSnippet) keys.add(`config:${normalizedText(guide.composioIntegration.customAuthConfigSnippet)}`);
+  if (guide.composioIntegration.composioRedirectUriHint) keys.add(`redirect:${normalizedText(guide.composioIntegration.composioRedirectUriHint)}`);
+  return keys;
 }
 
 function normalizeUrl(url: string): string {

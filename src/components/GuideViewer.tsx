@@ -430,9 +430,10 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
                   {[
                     activeVariant.recommendedAppType,
                     activeVariant.estimatedReviewTimeline,
+                    activeVariant.estimatedEffort ?? "Unknown",
                     activeVariant.securityAuditRequired,
                   ].some(known) && (
-                    <dl className="mt-5 grid gap-3 sm:grid-cols-3">
+                    <dl className="mt-5 grid gap-3 sm:grid-cols-4">
                       {known(activeVariant.recommendedAppType) && (
                         <div className="panel-muted p-3">
                           <dt className="text-[10px] uppercase tracking-wider text-zinc-600">
@@ -450,6 +451,16 @@ export const GuideViewer: React.FC<GuideViewerProps> = ({ guide }) => {
                           </dt>
                           <dd className="mt-2 text-xs leading-5 text-zinc-300">
                             {activeVariant.estimatedReviewTimeline}
+                          </dd>
+                        </div>
+                      )}
+                      {known(activeVariant.estimatedEffort ?? "Unknown") && (
+                        <div className="panel-muted p-3">
+                          <dt className="text-[10px] uppercase tracking-wider text-zinc-600">
+                            Estimated effort
+                          </dt>
+                          <dd className="mt-2 text-xs leading-5 text-zinc-300">
+                            {activeVariant.estimatedEffort}
                           </dd>
                         </div>
                       )}

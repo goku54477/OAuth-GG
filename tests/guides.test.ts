@@ -218,6 +218,30 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(JSON.stringify(normalized)).not.toContain("composio.example.com");
   });
 
+  it("preserves a reference-guide review timeline only when an official citation supports it", () => {
+    const citation = {
+      id: "reference-review-time",
+      sourceUrl: "https://docs.example-provider.com/oauth",
+      sourceTitle: "OAuth review",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "OAuth application review normally takes 2 business days.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      citations: [citation],
+      variants: [{
+        ...githubPublicIssuesGuide.variants[0],
+        estimatedReviewTimeline: "OAuth application review normally takes 2 business days.",
+      }],
+    };
+
+    expect(normalizeReferenceGuideForEvidence(guide).variants[0].estimatedReviewTimeline).toBe(
+      "OAuth application review normally takes 2 business days.",
+    );
+  });
+
   it("normalizes live guides into citation-backed documentation without invented configuration", () => {
     const unsafeLiveGuide: ProviderGuide = {
       ...githubPublicIssuesGuide,
@@ -323,6 +347,201 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     });
   });
 
+  it("uses source instruction titles, merges non-duplicate setup detail, and drops incomplete fragments", () => {
+    const firstCitation = {
+      id: "databricks-create",
+      sourceUrl: "https://docs.example-provider.com/oauth/create",
+      sourceTitle: "Create custom OAuth app",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Create a custom OAuth 2.0 application and enter the redirect URL. Use the current scope instead.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const secondCitation = {
+      ...firstCitation,
+      id: "databricks-enable",
+      sourceUrl: "https://docs.example-provider.com/oauth/enable",
+      sourceTitle: "Enable OAuth",
+      verbatimQuote: "Enable the OAuth application in the account console before users authorize it.",
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "directive-title-guide",
+      providerName: "Example Provider",
+      generationMode: "live-researched",
+      citations: [firstCitation, secondCitation],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Create a custom OAuth 2",
+        instructions: "Create a custom OAuth 2.0 application and enter the redirect URL.",
+        citationIds: [firstCitation.id],
+      }],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+    const text = normalized.registrationSteps.map((step) => `${step.title} ${step.instructions}`).join(" ");
+
+    expect(normalized.registrationSteps).toHaveLength(2);
+    expect(normalized.registrationSteps.map((step) => step.title)).not.toContain("Configure OAuth application");
+    expect(text).toContain("Enable the OAuth application");
+    expect(text).not.toContain("Use the current scope instead");
+    expect(normalized.registrationSteps[0]?.title).toContain("OAuth 2.0");
+    expect(normalized.registrationSteps[0]?.title).toContain("redirect URL");
+  });
+
+  it("rejects explanatory prose as configuration but derives an exact published Marketplace timeline", () => {
+    const citation = {
+      id: "marketplace-review",
+      sourceUrl: "https://docs.example-provider.com/marketplace/review",
+      sourceTitle: "Marketplace review",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Before listing, applications undergo Marketplace review. This process usually takes around two weeks. Configure redirect_uri with your callback URL.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "marketplace-timeline-guide",
+      generationMode: "live-researched",
+      citations: [citation],
+      composioIntegration: {
+        ...githubPublicIssuesGuide.composioIntegration,
+        customAuthConfigSnippet: "Unknown; rely on provider OAuth and keep credentials secure.",
+        citationIds: [citation.id],
+      },
+      variants: [{ ...githubPublicIssuesGuide.variants[0], estimatedReviewTimeline: "Unknown" }],
+      distributionAndReviewChecklist: [],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+
+    expect(normalized.composioIntegration.customAuthConfigSnippet).toBe("");
+    expect(normalized.variants[0]?.estimatedReviewTimeline).toBe("This process usually takes around two weeks.");
+    expect(normalized.distributionAndReviewChecklist.map((item) => item.claim).join(" ")).toContain("two weeks");
+  });
+
+  it("keeps faithful source-backed paraphrases and documented placeholder configuration", () => {
+    const citation = {
+      id: "paraphrased-oauth-docs",
+      sourceUrl: "https://docs.example-provider.com/oauth",
+      sourceTitle: "OAuth setup",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Create an OAuth application in the developer console. Add your callback URL before users authorize your integration. Configure redirect_uri with the callback address.",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "paraphrased-source-backed-guide",
+      providerName: "Example Provider",
+      generationMode: "live-researched",
+      citations: [citation],
+      composioIntegration: {
+        ...githubPublicIssuesGuide.composioIntegration,
+        customAuthConfigSnippet: "redirect_uri=<YOUR_CALLBACK_URL>",
+        citationIds: [citation.id],
+      },
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Create OAuth application",
+        instructions: "In the developer console, create an OAuth app and add the callback URL before authorization.",
+        citationIds: [citation.id],
+      }],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+
+    expect(normalized.registrationSteps[0]?.instructions.toLowerCase()).toContain("create an oauth app");
+    expect(normalized.composioIntegration.customAuthConfigSnippet).toBe("redirect_uri=<YOUR_CALLBACK_URL>");
+  });
+
+  it("preserves cited configuration and an applicable review timeline while leaving unsupported fields unknown", () => {
+    const citation = {
+      id: "provider-oauth-guide",
+      sourceUrl: "https://docs.example-provider.com/oauth",
+      sourceTitle: "OAuth application setup",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: [
+        "Create an OAuth application before requesting authorization.",
+        "Set the redirect URI to https://app.example-provider.com/oauth/callback.",
+        "Example configuration: redirect_uri=https://app.example-provider.com/oauth/callback",
+        "OAuth application review normally takes 2 business days.",
+        "Estimated implementation effort is 3 engineering days.",
+      ].join(" "),
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      slug: "supported-guide-details",
+      providerName: "Example Provider",
+      generationMode: "live-researched",
+      citations: [citation],
+      composioIntegration: {
+        ...githubPublicIssuesGuide.composioIntegration,
+        customAuthConfigSnippet: "redirect_uri=https://app.example-provider.com/oauth/callback",
+        composioRedirectUriHint: "https://app.example-provider.com/oauth/callback",
+        citationIds: [citation.id],
+      },
+      variants: [{
+        ...githubPublicIssuesGuide.variants[0],
+        recommendedAppType: "OAuth application",
+        estimatedReviewTimeline: "OAuth application review normally takes 2 business days.",
+        estimatedEffort: "Estimated implementation effort is 3 engineering days.",
+        securityAuditRequired: "Provider audit required",
+      }],
+      registrationSteps: [{
+        ...githubPublicIssuesGuide.registrationSteps[0],
+        title: "Create OAuth application",
+        instructions: "Create an OAuth application before requesting authorization.",
+        citationIds: [citation.id],
+      }],
+    };
+
+    const normalized = normalizeGuideForEvidence(guide);
+
+    expect(normalized.composioIntegration.customAuthConfigSnippet).toBe(
+      "redirect_uri=https://app.example-provider.com/oauth/callback",
+    );
+    expect(normalized.composioIntegration.composioRedirectUriHint).toBe(
+      "https://app.example-provider.com/oauth/callback",
+    );
+    expect(normalized.variants[0].estimatedReviewTimeline).toBe(
+      "OAuth application review normally takes 2 business days.",
+    );
+    expect(normalized.variants[0].estimatedEffort).toBe(
+      "Estimated implementation effort is 3 engineering days.",
+    );
+    expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
+    expect(normalized.registrationSteps[0].instructions).toBe(
+      "Create an OAuth application before requesting authorization.",
+    );
+  });
+
+  it("does not make a literal secret copyable even when a citation contains it", () => {
+    const citation = {
+      id: "unsafe-example",
+      sourceUrl: "https://docs.example-provider.com/oauth",
+      sourceTitle: "OAuth application setup",
+      authorityType: "official-provider-docs" as const,
+      retrievedAt: "2026-10-21T00:00:00.000Z",
+      verbatimQuote: "Example configuration: client_secret=live-secret-value-12345678",
+      epistemicStatus: "source-supported" as const,
+    };
+    const guide: ProviderGuide = {
+      ...githubPublicIssuesGuide,
+      generationMode: "live-researched",
+      citations: [citation],
+      composioIntegration: {
+        ...githubPublicIssuesGuide.composioIntegration,
+        customAuthConfigSnippet: "client_secret=live-secret-value-12345678",
+        citationIds: [citation.id],
+      },
+    };
+
+    expect(normalizeGuideForEvidence(guide).composioIntegration.customAuthConfigSnippet).toBe("");
+  });
+
   it("keeps citation-backed setup and conditional review guidance without restoring estimates", () => {
     const oauthCitation = {
       id: "hubspot-oauth",
@@ -387,7 +606,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
   });
 
-  it("keeps integration-directory submission guidance out of OAuth configuration and review timing unknown", () => {
+  it("keeps integration-directory submission guidance out of OAuth configuration but retains its published distribution timeline", () => {
     const trelloCitation = {
       id: "trello-integration-submission",
       sourceUrl: "https://developers.trello.com/docs/submitting-your-integration",
@@ -417,7 +636,7 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
           scope: "read",
           citationIds: [trelloCitation.id],
         }],
-        estimatedReviewTimeline: "A few days",
+        estimatedReviewTimeline: "Our review process usually takes only a few days.",
         securityAuditRequired: "Required",
       }],
       registrationSteps: [{
@@ -431,15 +650,15 @@ describe("Workstream 3: Deterministic Evidence Validator", () => {
     const normalized = normalizeGuideForEvidence(guide);
 
     expect(normalized.registrationSteps).toEqual([]);
-    expect(normalized.distributionAndReviewChecklist).toEqual([
+    expect(normalized.distributionAndReviewChecklist).toEqual(expect.arrayContaining([
       expect.objectContaining({
         claim: "To submit your app, please complete the form at go.trello.com/dev-support.",
         citationIds: [trelloCitation.id],
       }),
-    ]);
-    expect(normalized.distributionAndReviewChecklist[0]?.claim).not.toContain("few days");
+    ]));
+    expect(normalized.distributionAndReviewChecklist.map((item) => item.claim).join(" ")).toContain("few days");
     expect(normalized.variants[0].scopes).toEqual([]);
-    expect(normalized.variants[0].estimatedReviewTimeline).toBe("Unknown");
+    expect(normalized.variants[0].estimatedReviewTimeline).toBe("Our review process usually takes only a few days.");
     expect(normalized.variants[0].securityAuditRequired).toBe("Unknown");
     expect(normalized.explicitUnknowns.join(" ")).toMatch(/official evidence/i);
   });

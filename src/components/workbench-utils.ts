@@ -130,7 +130,7 @@ export function readGuideRedirect(payload: unknown): string | null {
   if (!payload || typeof payload !== "object") return null;
   const redirectUrl = (payload as { redirectUrl?: unknown }).redirectUrl;
   if (typeof redirectUrl !== "string") return null;
-  return /^\/guides\/[a-z0-9][a-z0-9-]*$/i.test(redirectUrl)
+  return /^\/guides\/[a-z0-9][a-z0-9_-]*$/i.test(redirectUrl)
     ? redirectUrl
     : null;
 }
@@ -200,6 +200,9 @@ export function guideToMarkdown(guide: ProviderGuide): string {
             : []),
           ...(known(variant.estimatedReviewTimeline)
             ? [`- Review timeline: ${variant.estimatedReviewTimeline}`]
+            : []),
+          ...(known(variant.estimatedEffort ?? "Unknown")
+            ? [`- Estimated effort: ${variant.estimatedEffort}`]
             : []),
           ...(known(variant.securityAuditRequired)
             ? [`- Security audit: ${variant.securityAuditRequired}`]

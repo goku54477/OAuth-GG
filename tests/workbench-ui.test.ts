@@ -122,6 +122,9 @@ describe("workbench UI trust boundaries", () => {
     expect(readGuideRedirect({ redirectUrl: "/guides/stripe-oauth" })).toBe(
       "/guides/stripe-oauth",
     );
+    expect(readGuideRedirect({ redirectUrl: "/guides/atlassian_mcp" })).toBe(
+      "/guides/atlassian_mcp",
+    );
     expect(
       readGuideRedirect({ redirectUrl: "https://evil.example/guides/stripe" }),
     ).toBeNull();
@@ -130,9 +133,16 @@ describe("workbench UI trust boundaries", () => {
   });
 
   it("exports only claims present in the loaded ProviderGuide", () => {
-    const markdown = guideToMarkdown(guide);
+    const markdown = guideToMarkdown({
+      ...guide,
+      variants: [{
+        ...guide.variants[0],
+        estimatedEffort: "Three engineering days.",
+      }],
+    });
 
     expect(markdown).toContain("Stripe OAuth guide");
+    expect(markdown).toContain("Estimated effort: Three engineering days.");
     expect(markdown).toContain("## Investigated scenario");
     expect(markdown).toContain("Requested capabilities: read, write");
     expect(markdown).toContain(
